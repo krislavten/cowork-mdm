@@ -1,0 +1,38 @@
+run:
+  timeout: 5m
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gofmt
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - misspell
+    - unconvert
+    - bodyclose
+
+linters-settings:
+  revive:
+    rules:
+      - name: var-naming
+      - name: exported
+        arguments: [checkPrivateReceivers, sayRepetitiveInsteadOfStutters]
+  misspell:
+    locale: US
+
+issues:
+  exclude-dirs:
+    - internal/schema/extract  # maintainer tool, looser rules
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - revive
+    - path: cmd/cowork-mdm/main\.go
+      linters:
+        - revive  # main is a sink

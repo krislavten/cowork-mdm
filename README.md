@@ -72,6 +72,22 @@ cowork-mdm doctor --fix                     # auto-repair what's auto-repairable
 
 See [AGENTS.md](AGENTS.md) for development conventions. Issues and PRs welcome.
 
+## Maintainer notes
+
+### Releasing
+
+Releases are tag-triggered. Push a `v*` tag and `.github/workflows/release.yml` runs GoReleaser.
+
+The release job publishes to two places:
+1. **GitHub Releases** on this repo — uses the default `GITHUB_TOKEN`.
+2. **Homebrew tap** at `krislavten/homebrew-tap` — requires secret `HOMEBREW_TAP_GITHUB_TOKEN` on this repo. The token must be a personal access token (classic or fine-grained) with **contents:write** on `krislavten/homebrew-tap`. Without it, the brew formula push step fails; everything else (GitHub Release + binaries + checksums) still succeeds.
+
+Set the secret once:
+```bash
+gh secret set HOMEBREW_TAP_GITHUB_TOKEN --repo krislavten/cowork-mdm
+# paste the PAT when prompted
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
