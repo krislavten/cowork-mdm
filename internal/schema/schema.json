@@ -1,0 +1,638 @@
+{
+  "version": "1",
+  "extractedFromAppVersion": "1.5354.0",
+  "keys": [
+    {
+      "name": "isDesktopExtensionEnabled",
+      "type": "boolean",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Allow desktop extensions",
+      "description": "Permit users to install local desktop extensions (.dxt/.mcpb).",
+      "appMin": "0.14.1",
+      "legacyAlias": "isDxtEnabled",
+      "default": true
+    },
+    {
+      "name": "isDesktopExtensionDirectoryEnabled",
+      "type": "boolean",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Show extension directory",
+      "description": "Show the Anthropic extension directory in the connectors UI.",
+      "appMin": "0.14.1",
+      "legacyAlias": "isDxtDirectoryEnabled",
+      "default": true
+    },
+    {
+      "name": "isDesktopExtensionSignatureRequired",
+      "type": "boolean",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Require signed extensions",
+      "description": "Reject desktop extensions that are not signed by a trusted publisher.",
+      "appMin": "0.14.1",
+      "legacyAlias": "isDxtSignatureRequired",
+      "default": false
+    },
+    {
+      "name": "isLocalDevMcpEnabled",
+      "type": "boolean",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Allow user-added MCP servers",
+      "description": "Permit users to add their own local (stdio) MCP servers via Developer settings. HTTP/SSE servers are managed separately. When false, only servers from the Managed MCP servers list and org-provisioned plugins are available.",
+      "appMin": "0.14.1",
+      "default": true
+    },
+    {
+      "name": "isClaudeCodeForDesktopEnabled",
+      "type": "boolean",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Allow Claude Code tab",
+      "description": "Show the Code tab (terminal-based coding sessions). Sessions run on the host, not inside the VM.",
+      "appMin": "1.0.0",
+      "default": true
+    },
+    {
+      "name": "secureVmFeaturesEnabled",
+      "type": "boolean",
+      "scopes": [
+        "1p"
+      ],
+      "title": "Secure VM features",
+      "description": "",
+      "appMin": "1.0.0"
+    },
+    {
+      "name": "requireCoworkFullVmSandbox",
+      "type": "boolean",
+      "scopes": [
+        "1p"
+      ],
+      "title": "Require full VM sandbox",
+      "description": "Forces the agent loop, file/web tools, and plugin-bundled MCPs to run inside the VM, disabling host-loop mode.",
+      "appMin": "1.2.0",
+      "default": false
+    },
+    {
+      "name": "coworkEgressAllowedHosts",
+      "type": "stringArray",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Allowed egress hosts",
+      "description": "Additional hostnames the Cowork sandbox may reach (web fetch, shell commands, package installs). JSON array; supports *.example.com wildcards. The inference provider host is always allowed. Set to [\"*\"] to disable VM-level egress filtering entirely. Common hosts to add for dependency installs (pip/npm/apt/cargo/git): ${CUe.join(\", \")}.",
+      "appMin": "1.3.0",
+      "example": "[\"docs.example.com\",\"*.corp.example.com\"]"
+    },
+    {
+      "name": "otlpEndpoint",
+      "type": "url",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "OpenTelemetry collector endpoint",
+      "description": "Base URL of an OpenTelemetry collector. When set, Cowork sessions export logs and metrics (prompts, tool calls, token counts) to this endpoint via OTLP. The endpoint host is automatically added to the session network allowlist.",
+      "appMin": "1.4.0",
+      "example": "https://otel.example.com"
+    },
+    {
+      "name": "otlpProtocol",
+      "type": "enum",
+      "scopes": [
+        "3p"
+      ],
+      "title": "OpenTelemetry exporter protocol",
+      "description": "OTLP wire protocol used to reach the collector. Defaults to http/protobuf when otlpEndpoint is set.",
+      "appMin": "1.4.0",
+      "default": "http/protobuf",
+      "enumValues": [
+        "http/protobuf",
+        "http/json",
+        "grpc"
+      ]
+    },
+    {
+      "name": "otlpHeaders",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "OpenTelemetry exporter headers",
+      "description": "Headers sent with every OTLP request, as comma-separated key=value pairs (the standard OTEL_EXPORTER_OTLP_HEADERS format).",
+      "appMin": "1.4.0",
+      "sensitive": true,
+      "example": "Authorization=Bearer abc123,X-Scope-OrgID=team1"
+    },
+    {
+      "name": "otlpResourceAttributes",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "OpenTelemetry resource attributes",
+      "description": "Extra OTEL resource attributes as comma-separated key=value pairs (the standard OTEL_RESOURCE_ATTRIBUTES format). Appended to the app's built-in attributes; keys that collide with built-ins (e.g. service.name) are dropped. Scoped for bootstrap so per-user values can be returned at sign-in.",
+      "appMin": "1.5.0",
+      "sensitive": true,
+      "example": "enduser.id=alice@example.com,team=platform"
+    },
+    {
+      "name": "autoUpdaterEnforcementHours",
+      "type": "integer",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Auto-update enforcement window",
+      "description": "When set, forces a pending update to install after this many hours regardless of user activity. When unset, the app uses a 72-hour window but defers installation while the user is active.",
+      "appMin": "0.14.1"
+    },
+    {
+      "name": "disableAutoUpdates",
+      "type": "boolean",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Block auto-updates",
+      "description": "Blocks the app from checking for and downloading updates from Anthropic. The app will stay on its installed version until updated by other means.",
+      "appMin": "0.14.1",
+      "default": false
+    },
+    {
+      "name": "disableDeploymentModeChooser",
+      "type": "boolean",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Skip login-mode chooser",
+      "description": "Skips the first-launch screen that asks the user to choose between Anthropic sign-in and the organization-managed provider. The app goes straight to the mode implied by this configuration (third-party when inferenceProvider is set), overriding any earlier user choice.",
+      "appMin": "1.5.0",
+      "default": false
+    },
+    {
+      "name": "forceLoginOrgUUID",
+      "type": "string",
+      "scopes": [
+        "1p"
+      ],
+      "title": "Required organization",
+      "description": "Restricts login to specific org UUID(s). Single UUID string or JSON array.",
+      "appMin": "1.0.0",
+      "example": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "name": "inferenceProvider",
+      "type": "enum",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Inference provider",
+      "description": "Selects the inference backend. Setting this key activates third-party mode.",
+      "appMin": "1.2.0",
+      "enumValues": [
+        "bedrock",
+        "vertex",
+        "gateway",
+        "foundry"
+      ]
+    },
+    {
+      "name": "inferenceGatewayBaseUrl",
+      "type": "url",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Gateway base URL",
+      "description": "Full URL of the inference gateway endpoint.",
+      "appMin": "1.2.0",
+      "provider": "gateway",
+      "example": "https://llm-gateway.example.corp"
+    },
+    {
+      "name": "inferenceGatewayApiKey",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Gateway API key",
+      "description": "",
+      "appMin": "1.2.0",
+      "sensitive": true,
+      "provider": "gateway"
+    },
+    {
+      "name": "inferenceGatewayAuthScheme",
+      "type": "enum",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Gateway auth scheme",
+      "description": "How to send the gateway credential. 'bearer' (default) sends Authorization: Bearer. Set 'x-api-key' only if your gateway requires the x-api-key header instead (e.g. api.anthropic.com). Set 'sso' to obtain the credential via the gateway's own browser-based sign-in (RFC 8414 discovery at `<inferenceGatewayBaseUrl>/.well-known/oauth-authorization-server` + RFC 8628 device-code grant); inferenceGatewayApiKey and inferenceCredentialHelper are not required.",
+      "appMin": "1.4.0",
+      "provider": "gateway",
+      "example": "bearer",
+      "default": "bearer",
+      "enumValues": [
+        "auto",
+        "x-api-key",
+        "bearer",
+        "sso"
+      ]
+    },
+    {
+      "name": "inferenceGatewayHeaders",
+      "type": "stringArray",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Gateway extra headers",
+      "description": "Extra HTTP headers sent on every inference request. JSON array of 'Name: Value' strings.",
+      "appMin": "1.4.0",
+      "sensitive": true,
+      "provider": "gateway",
+      "example": "[\"X-Org-Id: team1\",\"X-Tenant: acme\"]"
+    },
+    {
+      "name": "inferenceVertexProjectId",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "GCP project ID",
+      "description": "",
+      "appMin": "1.2.0",
+      "provider": "vertex",
+      "example": "my-gcp-project"
+    },
+    {
+      "name": "inferenceVertexRegion",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "GCP region",
+      "description": "GCP region for the Vertex AI endpoint.",
+      "appMin": "1.2.0",
+      "provider": "vertex",
+      "example": "us-east5"
+    },
+    {
+      "name": "inferenceVertexCredentialsFile",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "GCP credentials file path",
+      "description": "Absolute path to a service-account JSON or ADC file. No tilde or environment-variable expansion.",
+      "appMin": "1.2.0",
+      "provider": "vertex",
+      "example": [
+        "/etc/claude/vertex-sa.json",
+        "C:\\ProgramData\\Claude\\vertex-sa.json"
+      ]
+    },
+    {
+      "name": "inferenceVertexOAuthClientId",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Vertex OAuth client ID",
+      "description": "Client ID of a Desktop-app OAuth client created in your GCP project (APIs & Services → Credentials). When set together with the client secret, the app runs Sign in with Google and stores the resulting refresh token encrypted; `inferenceVertexCredentialsFile` is not needed.",
+      "appMin": "1.4.0",
+      "provider": "vertex",
+      "example": "NNN.apps.googleusercontent.com"
+    },
+    {
+      "name": "inferenceVertexOAuthClientSecret",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Vertex OAuth client secret",
+      "description": "Client secret for the Desktop-app OAuth client. Not confidential for installed apps per Google's docs — PKCE protects the flow.",
+      "appMin": "1.4.0",
+      "sensitive": true,
+      "provider": "vertex",
+      "example": "GOCSPX-..."
+    },
+    {
+      "name": "inferenceVertexOAuthScopes",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Vertex OAuth scopes",
+      "description": "Space-separated OAuth scopes for the Google sign-in flow. Defaults to `openid email https://www.googleapis.com/auth/cloud-platform`. Narrow this if your Workspace's Context-Aware Access or reauth policy restricts `cloud-platform`.",
+      "appMin": "1.4.0",
+      "provider": "vertex",
+      "example": "openid email https://www.googleapis.com/auth/cloud-platform"
+    },
+    {
+      "name": "inferenceVertexBaseUrl",
+      "type": "url",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Vertex AI base URL",
+      "description": "Override the Vertex inference endpoint (e.g. a Private Service Connect address). Leave unset to use the public regional endpoint.",
+      "appMin": "1.2.0",
+      "provider": "vertex",
+      "example": "https://REGION-aiplatform-ENDPOINT_ID.p.googleapis.com"
+    },
+    {
+      "name": "inferenceBedrockRegion",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "AWS region",
+      "description": "AWS region for the Bedrock runtime endpoint.",
+      "appMin": "1.2.0",
+      "provider": "bedrock",
+      "example": "us-west-2"
+    },
+    {
+      "name": "inferenceBedrockBearerToken",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "AWS bearer token",
+      "description": "",
+      "appMin": "1.2.0",
+      "sensitive": true,
+      "provider": "bedrock"
+    },
+    {
+      "name": "inferenceBedrockBaseUrl",
+      "type": "url",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Bedrock base URL",
+      "description": "Override the Bedrock inference endpoint (e.g. a VPC interface endpoint or LLM gateway). Leave unset to use the public regional endpoint.",
+      "appMin": "1.2.0",
+      "provider": "bedrock",
+      "example": "https://vpce-0123-abcd.bedrock-runtime.us-east-1.vpce.amazonaws.com"
+    },
+    {
+      "name": "inferenceBedrockProfile",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "AWS profile name",
+      "description": "AWS named profile to use (from the AWS config/credentials files). Ignored when inferenceBedrockBearerToken is set.",
+      "appMin": "1.2.0",
+      "provider": "bedrock",
+      "example": "default"
+    },
+    {
+      "name": "inferenceBedrockAwsDir",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "AWS config directory",
+      "description": "Absolute path to the directory containing AWS config and credentials files. Optional — defaults to the user's ~/.aws when inferenceBedrockBearerToken is not set. Copied into the sandbox at session start so the named profile can be resolved.",
+      "appMin": "1.2.0",
+      "provider": "bedrock",
+      "example": [
+        "/Users/jdoe/.aws",
+        "C:\\Users\\jdoe\\.aws"
+      ]
+    },
+    {
+      "name": "inferenceBedrockServiceTier",
+      "type": "enum",
+      "scopes": [],
+      "title": "Bedrock service tier",
+      "description": "Bedrock service tier, sent as the X-Amzn-Bedrock-Service-Tier header. Leave unset for on-demand. Tier availability varies by model and region. Reserved capacity uses a provisioned throughput ARN as the model ID instead of this setting. Older bundled Claude Code CLI versions ignore this key.",
+      "provider": "bedrock",
+      "enumValues": [
+        "flex",
+        "priority"
+      ]
+    },
+    {
+      "name": "inferenceFoundryResource",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Azure AI Foundry resource name",
+      "description": "Azure AI Foundry resource name used to construct the endpoint URL.",
+      "appMin": "1.2.0",
+      "provider": "foundry",
+      "example": "my-foundry-resource"
+    },
+    {
+      "name": "inferenceFoundryApiKey",
+      "type": "string",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Azure AI Foundry API key",
+      "description": "",
+      "appMin": "1.2.0",
+      "sensitive": true,
+      "provider": "foundry"
+    },
+    {
+      "name": "inferenceModels",
+      "type": "stringArray",
+      "scopes": [
+        "3p",
+        "3p-bootstrap"
+      ],
+      "title": "Model list",
+      "description": "JSON array of model IDs or aliases (sonnet, opus, haiku). First entry is the picker default. Required for Vertex, Bedrock, and Foundry. For gateway: optional — when set, the picker shows exactly this list (use it to restrict cost or hide non-Claude routes); when unset, the picker shows whatever the gateway's /v1/models endpoint returns. Entries may be plain strings or objects of the form {\"name\": \"<id>\", \"supports1m\": true} — set supports1m to offer a 1M-token-context picker variant for that model. Only set it for models your provider actually serves with the extended context window.",
+      "appMin": "1.2.0",
+      "example": "[{\"name\":\"claude-opus-4\",\"supports1m\":true},\"claude-sonnet-4\"]"
+    },
+    {
+      "name": "deploymentOrganizationUuid",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Organization UUID",
+      "description": "Stable identifier for this deployment, used to scope local storage and telemetry. Must be a UUID.",
+      "appMin": "1.2.0",
+      "example": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "name": "disableEssentialTelemetry",
+      "type": "boolean",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Block essential telemetry",
+      "description": "Blocks crash and error reports (stack traces, app state at failure, device/OS info) and performance timing data sent to Anthropic. Used to investigate bugs and monitor responsiveness.",
+      "appMin": "1.2.0",
+      "default": false
+    },
+    {
+      "name": "disableNonessentialTelemetry",
+      "type": "boolean",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Block nonessential telemetry",
+      "description": "Blocks product-usage analytics sent to Anthropic — feature usage, navigation patterns, UI actions.",
+      "appMin": "1.2.0",
+      "default": false
+    },
+    {
+      "name": "disableNonessentialServices",
+      "type": "boolean",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Block nonessential services",
+      "description": "Blocks connector favicons (fetched from a third-party favicon service — leaks MCP hostnames) and the artifact-preview sandbox iframe. Connectors fall back to letter icons; artifacts do not render.",
+      "appMin": "1.2.0",
+      "default": false
+    },
+    {
+      "name": "managedMcpServers",
+      "type": "jsonString",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Managed MCP servers",
+      "description": "JSON array of MCP server configs. Each entry: `name` (string, required, unique within array), `url` (https URL, required), `transport` (\"http\" or \"sse\", default \"http\"), `headers` (string→string map, optional, mutually exclusive with `oauth`), `headersHelper` (absolute path to local executable that prints a JSON object of HTTP headers on stdout — for rotating bearers; optional, mutually exclusive with `oauth`; merged over `headers`, helper wins on conflict. The helper runs with the app\\'s launch environment, not your shell rc — read credentials from keychain/file or source them explicitly in the script), `headersHelperTtlSec` (positive integer, default 300 — re-runs the helper at most once per TTL across connection attempts), `oauth` (boolean or object, optional — `true` triggers dynamic-registration PKCE; `{\"clientId\":\"<id>\"}` skips registration and uses a pre-registered public client (register redirect URI `http://127.0.0.1:53280/callback` on it — Entra/Google accept the portless `http://127.0.0.1/callback`, but providers that match the port exactly need 53280). Optional `tenantId` (Entra Directory ID) pins the authorization server for single-tenant apps; `scope` is required when `tenantId` is set), `toolPolicy` (toolName→\"allow\"/\"ask\"/\"blocked\", optional — locks the per-tool approval state; unset = user controls). Connections are made from a host-side utility process and do not pass through the in-VM allowlist.",
+      "appMin": "1.2.0",
+      "sensitive": true,
+      "example": "[{\"name\":\"internal-tools\",\"url\":\"https://mcp.example.corp/sse\",\"transport\":\"sse\",\"headers\":{\"Authorization\":\"Bearer <token>\"},\"toolPolicy\":{\"runShell\":\"blocked\",\"searchDocs\":\"allow\"}},{\"name\":\"corp-wiki\",\"url\":\"https://wiki.example.corp/mcp\",\"oauth\":true},{\"name\":\"m365\",\"url\":\"https://m365.mcp.example.corp/mcp\",\"oauth\":{\"clientId\":\"11111111-2222-3333-4444-555555555555\",\"tenantId\":\"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee\",\"scope\":\"api://<resource-app-id>/access_as_user offline_access\"}}]"
+    },
+    {
+      "name": "disabledBuiltinTools",
+      "type": "stringArray",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Disabled built-in tools",
+      "description": "JSON array of tool names to remove from the agent tool list (e.g. [\"WebSearch\"]).",
+      "appMin": "1.2.0",
+      "example": "[\"WebSearch\",\"Bash\"]"
+    },
+    {
+      "name": "allowedWorkspaceFolders",
+      "type": "stringArray",
+      "scopes": [
+        "3p",
+        "1p"
+      ],
+      "title": "Allowed workspace folders",
+      "description": "JSON array of absolute paths the user may attach as workspace folders. A leading ~ expands to the per-user home directory. Unset means unrestricted.",
+      "appMin": "1.2.0",
+      "example": [
+        "[\"~/Documents/work\"]",
+        "[\"~\\\\\\\\Documents\\\\\\\\work\"]"
+      ]
+    },
+    {
+      "name": "inferenceCredentialHelper",
+      "type": "string",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Credential helper script",
+      "description": "Absolute path to an executable that prints the inference credential to stdout. When set, the static inferenceGatewayApiKey / inferenceFoundryApiKey is optional.",
+      "appMin": "1.2.0",
+      "example": [
+        "/usr/local/bin/corp-cred-helper",
+        "C:\\Program Files\\Corp\\cred-helper.exe"
+      ]
+    },
+    {
+      "name": "inferenceCredentialHelperTtlSec",
+      "type": "integer",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Credential helper TTL",
+      "description": "Helper output is cached for this many seconds. Default 3600. Re-runs at the next session start after expiry.",
+      "appMin": "1.2.0",
+      "default": 3600
+    },
+    {
+      "name": "bootstrapEnabled",
+      "type": "boolean",
+      "title": "Use bootstrap config",
+      "description": "When unset or true, the app fetches `bootstrapUrl` at launch and applies the response as a config overlay. Set false to keep the URL saved but skip the fetch.",
+      "appMin": "1.4.0",
+      "default": true
+    },
+    {
+      "name": "bootstrapUrl",
+      "type": "url",
+      "title": "Bootstrap config URL",
+      "description": "HTTPS endpoint fetched at app launch. The JSON response body overrides per-user provider config (project ID, region, base URL, model list, credential, OTLP endpoint) for the current user. When `bootstrapOidc` is unset, the app signs in via RFC 8628 device-code: discovery hits `<bootstrapUrl-minus-trailing-/bootstrap>/.well-known/oauth-authorization-server` (the path-scoped issuer base, not the bare origin); when the response's `inferenceGatewayBaseUrl` shares this origin, the same session authorizes inference.",
+      "appMin": "1.4.0",
+      "example": "https://config.example.corp/claude-desktop"
+    },
+    {
+      "name": "bootstrapOidc",
+      "type": "jsonString",
+      "title": "Bootstrap OIDC parameters",
+      "description": "JSON object: `clientId` (required), and either `issuer` (https URL — endpoints discovered via /.well-known/openid-configuration) or both `authorizationUrl` and `tokenUrl`. Optional: `scopes` (space-separated string), `redirectPort` (pin the loopback callback port for IdPs that require an exact redirect URI). When set, the app runs an authorization-code-with-PKCE flow in the system browser and sends the resulting access token as a Bearer header on the bootstrap request. When unset, the app instead runs an RFC 8628 device-code flow; discovery hits `<bootstrapUrl-minus-trailing-/bootstrap>/.well-known/oauth-authorization-server` (the path-scoped issuer base, not the bare origin).",
+      "appMin": "1.4.0",
+      "example": "{\"issuer\":\"https://login.microsoftonline.com/TENANT_ID/v2.0\",\"clientId\":\"00000000-0000-0000-0000-000000000000\",\"scopes\":\"openid profile\"}"
+    },
+    {
+      "name": "inferenceMaxTokensPerWindow",
+      "type": "integer",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Max tokens per window",
+      "description": "Total input+output tokens permitted per window before further messages are refused. Unset = no cap.",
+      "appMin": "1.3.0",
+      "example": "5000000"
+    },
+    {
+      "name": "inferenceTokenWindowHours",
+      "type": "integer",
+      "scopes": [
+        "3p"
+      ],
+      "title": "Token cap window",
+      "description": "Tumbling window length for the token cap. Max 720 hours (30 days). The counter resets at the end of each window.",
+      "appMin": "1.3.0",
+      "example": "24"
+    }
+  ]
+}
