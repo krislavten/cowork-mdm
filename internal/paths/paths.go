@@ -133,7 +133,7 @@ func (p darwinProvider) resolveHome() (string, error) {
 	if p.home != nil {
 		return p.home()
 	}
-	// Only honour $HOME. Avoid os.UserHomeDir() host fallback so
+	// Only honor $HOME. Avoid os.UserHomeDir() host fallback so
 	// ForOS("darwin") remains deterministic when executed from a
 	// non-darwin host (which would otherwise inject a backslash path on
 	// Windows). Callers get an empty UserSessionsDir() when $HOME is
@@ -192,7 +192,7 @@ func (p windowsProvider) resolveHome() (string, error) {
 	if p.home != nil {
 		return p.home()
 	}
-	// Only honour %USERPROFILE%. Avoid os.UserHomeDir() host fallback so
+	// Only honor %USERPROFILE%. Avoid os.UserHomeDir() host fallback so
 	// ForOS("windows") stays deterministic when running from a non-Windows
 	// host (which would otherwise return a POSIX path). When unset,
 	// UserSessionsDir() resolves to empty, matching the spec.
@@ -217,7 +217,7 @@ func (otherProvider) LaunchAgentDir() string                       { return "" }
 // ForOS returns the Provider for a specific operating system identifier.
 // Intended for tests that need to simulate multiple OSes from a single host.
 //
-// Recognised values: "darwin", "windows". Any other value (including
+// Recognized values: "darwin", "windows". Any other value (including
 // "linux") returns the empty-path otherProvider.
 func ForOS(os string) Provider {
 	switch os {

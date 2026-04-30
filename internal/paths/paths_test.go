@@ -6,7 +6,7 @@ import (
 )
 
 // TestForOS_Darwin_StaticPaths pins the literal macOS paths that other
-// packages depend on. Changing any of these is a behavioural break for
+// packages depend on. Changing any of these is a behavioral break for
 // cowork-mdm's MDM payloads and should force a spec update.
 func TestForOS_Darwin_StaticPaths(t *testing.T) {
 	p := ForOS("darwin")
@@ -92,7 +92,7 @@ func TestDarwinProvider_UserSessionsDir_HomeInjection(t *testing.T) {
 }
 
 // TestDarwinProvider_UserSessionsDir_EnvFallback ensures the default
-// resolver honours $HOME when no injection is provided. We set the env
+// resolver honors $HOME when no injection is provided. We set the env
 // for the test and restore it afterwards.
 func TestDarwinProvider_UserSessionsDir_EnvFallback(t *testing.T) {
 	t.Setenv("HOME", "/Users/envtest")
@@ -178,7 +178,7 @@ func TestWindowsProvider_UserSessionsDir_HomeInjection(t *testing.T) {
 }
 
 // TestWindowsProvider_UserSessionsDir_EnvFallback ensures the default
-// resolver honours %USERPROFILE%.
+// resolver honors %USERPROFILE%.
 func TestWindowsProvider_UserSessionsDir_EnvFallback(t *testing.T) {
 	t.Setenv("USERPROFILE", `C:\Users\envtest`)
 	p := windowsProvider{}
