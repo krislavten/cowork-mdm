@@ -1,0 +1,21 @@
+# Binaries
+/cowork-mdm
+/bin/
+/dist/
+
+# Test artifacts
+/coverage.out
+/coverage.html
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Go
+/vendor/
+
+# Local scratch
+/tmp/
+/scratch/
