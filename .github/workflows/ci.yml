@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Format check
+        if: matrix.os != 'windows-2022'
+        shell: bash
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt would reformat:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Tidy check
+        if: matrix.os != 'windows-2022'
+        shell: bash
+        run: |
+          go mod tidy
+          dirty=$(git status --porcelain -- go.mod go.sum)
+          if [ -n "$dirty" ]; then
+            echo "go mod tidy produced changes — commit them:"
+            echo "$dirty"
+            git diff -- go.mod go.sum || true
+            exit 1
+          fi
+
+      - name: Build (native)
+        run: go build ./...
+
+      - name: Cross-compile sanity (darwin+windows+linux)
+        if: matrix.os == 'ubuntu-24.04'
+        shell: bash
+        run: |
+          for tgt in "darwin arm64" "darwin amd64" "windows amd64" "windows arm64" "linux amd64" "linux arm64"; do
+            set -- $tgt
+            GOOS=$1 GOARCH=$2 go build ./... || { echo "cross-build failed: $tgt"; exit 1; }
+          done
+
+      - name: Test
+        run: go test ./... -race -count=1 -timeout=5m
+
+      # (deliberate: no test-artifact upload on failure — CI logs are sufficient)
+
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62
+          args: --timeout=5m
