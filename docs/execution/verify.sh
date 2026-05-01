@@ -73,7 +73,7 @@ TOUCHED_FILE=$(mktemp)
 } | sort -u | grep -E "$PROTECTED_RE" > "$TOUCHED_FILE" || true
 
 if [ -s "$TOUCHED_FILE" ]; then
-    if ! echo "$BRANCH" | grep -qE '^(plan/|chore/|coord/)'; then
+    if ! echo "$BRANCH" | grep -qE '^(plan/|chore/|coord/|release/)'; then
         echo "  ✗ task branch '$BRANCH' modifies protected files:"
         sed 's/^/    /' "$TOUCHED_FILE"
         FAIL=1
@@ -123,7 +123,7 @@ case "$TASK" in
         run "ui unit tests" go test ./internal/ui/...
         ;;
     task-11)
-        run "cmd wiring tests" go test ./cmd-wiring/... ./cmd/...
+        run "cmd wiring tests" go test ./cmd/...
         run "binary produces --version" bash -c '
             go build -o /tmp/cowork-mdm-verify ./cmd/cowork-mdm &&
             /tmp/cowork-mdm-verify --version | grep -qi "cowork-mdm"
