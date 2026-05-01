@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -61,6 +62,17 @@ func setupFakeMarketplace(t *testing.T, name string) string {
 	runGit("add", ".")
 	runGit("commit", "-m", "initial", "-q")
 
+	return toFileURL(dir)
+}
+
+// toFileURL converts a native filesystem path into a file:// URL that
+// go-git's transport layer accepts. On Windows, the native path uses
+// backslashes and a drive letter, which net/url can't parse as-is —
+// we need "file:///C:/Users/..." with forward slashes.
+func toFileURL(dir string) string {
+	if runtime.GOOS == "windows" {
+		return "file:///" + strings.ReplaceAll(dir, "\\", "/")
+	}
 	return "file://" + dir
 }
 
