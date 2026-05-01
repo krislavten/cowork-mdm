@@ -13,8 +13,16 @@ import (
 // setupFakeMarketplace creates a real git repo on disk that mimics the
 // marketplace convention (plugins/foo/.claude-plugin/plugin.json). Returns
 // the file:// URL suitable for passing to Add().
+//
+// Skips the calling test on Windows: the marketplace package's spec scopes
+// it to macOS in v0.2 (Windows junction support deferred), and go-git's
+// file:// transport has Windows-specific path parsing quirks we don't
+// need to work around for a platform we don't yet support.
 func setupFakeMarketplace(t *testing.T, name string) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skipf("marketplace integration tests are macOS-only in v0.2")
+	}
 	// Skip if git isn't on PATH — go-git clone needs a URL we can reach.
 	// file:// clones work via go-git's pure-Go transport, no external git needed.
 	dir := filepath.Join(t.TempDir(), name)
