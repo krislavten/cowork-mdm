@@ -1,0 +1,30 @@
+name: bedrock-basic
+description: |
+  AWS Bedrock inference provider, using the ~/.aws profile on each user's machine.
+  Replace the ARN placeholders with your own inference-profile ARNs before deployment.
+
+  This template is a scaffold: it does NOT lock down MCP or egress. Layer
+  those via --set or a --from <your-overrides>.yaml.
+
+values:
+  inferenceProvider: bedrock
+
+  # Skip the first-launch "choose login mode" screen. Safe when provider
+  # keys below are fully populated.
+  disableDeploymentModeChooser: true
+
+  # AWS region that hosts your Bedrock inference-profile ARNs.
+  inferenceBedrockRegion: us-west-2
+
+  # AWS profile name (from ~/.aws/credentials) to use. The app copies the
+  # user's ~/.aws into its sandbox at session start, so each user needs a
+  # local profile of this name.
+  inferenceBedrockProfile: default
+
+  # JSON array of ARNs. First entry is the picker default. Use the [1m]
+  # suffix inside a name to offer the 1M-token-context variant for that
+  # model (only if your account has that entitlement).
+  #
+  # Replace ACCOUNT / REGION / PROFILE_ID with your own values.
+  inferenceModels: >-
+    ["arn:aws:bedrock:us-west-2:ACCOUNT:application-inference-profile/OPUS_PROFILE_ID","arn:aws:bedrock:us-west-2:ACCOUNT:application-inference-profile/SONNET_PROFILE_ID[1m]","arn:aws:bedrock:us-west-2:ACCOUNT:application-inference-profile/HAIKU_PROFILE_ID"]

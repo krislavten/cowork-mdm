@@ -1,0 +1,16 @@
+name: foundry
+description: |
+  Azure AI Foundry backend. Replace resource name + API key with your
+  foundry deployment's details.
+
+values:
+  inferenceProvider: foundry
+
+  disableDeploymentModeChooser: true
+
+  inferenceFoundryResource: my-foundry-resource
+  inferenceFoundryApiKey: REPLACE_WITH_YOUR_FOUNDRY_API_KEY
+
+  # Required for Foundry. List the models your deployment exposes.
+  inferenceModels: >-
+    ["claude-opus-4","claude-sonnet-4"]

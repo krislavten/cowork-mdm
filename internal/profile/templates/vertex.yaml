@@ -1,0 +1,24 @@
+name: vertex
+description: |
+  Google Cloud Vertex AI backend. Requires a GCP project with Vertex +
+  Anthropic models enabled. Replace project/region with your values.
+
+values:
+  inferenceProvider: vertex
+
+  disableDeploymentModeChooser: true
+
+  inferenceVertexProjectId: my-gcp-project
+  inferenceVertexRegion: us-east5
+
+  # Option A: use a service-account JSON file. Absolute path, no tilde.
+  inferenceVertexCredentialsFile: /etc/claude/vertex-sa.json
+
+  # Option B (uncomment instead): Sign in with Google via OAuth Desktop app.
+  # inferenceVertexOAuthClientId: "00000000-0000-0000-0000-000000000000.apps.googleusercontent.com"
+  # inferenceVertexOAuthClientSecret: "GOCSPX-..."
+
+  # Required for Vertex. Replace with the model IDs available in your
+  # project (claude-opus-4, claude-sonnet-4, claude-haiku-4-5, etc.).
+  inferenceModels: >-
+    ["claude-opus-4","claude-sonnet-4","claude-haiku-4-5"]

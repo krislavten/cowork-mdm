@@ -1,0 +1,28 @@
+name: gateway
+description: |
+  Claude Desktop talking to a self-hosted or third-party LLM gateway
+  (inferenceProvider=gateway). Replace base URL and auth scheme with your
+  gateway's actual config.
+
+values:
+  inferenceProvider: gateway
+
+  disableDeploymentModeChooser: true
+
+  # Full URL of the gateway endpoint — usually something like
+  # https://llm-gateway.example.corp
+  inferenceGatewayBaseUrl: https://llm-gateway.example.corp
+
+  # How to authenticate. Options:
+  #   bearer     — Authorization: Bearer <token>  (default)
+  #   x-api-key  — x-api-key: <token>             (for api.anthropic.com-compatible)
+  #   sso        — OAuth device-code flow; no static key
+  inferenceGatewayAuthScheme: bearer
+
+  # Gateway API key. Remove this line if using SSO / inferenceCredentialHelper.
+  inferenceGatewayApiKey: REPLACE_WITH_YOUR_API_KEY_OR_REMOVE
+
+  # Optional: pin a model list. Without this the gateway's /v1/models result
+  # is used. Uncomment and fill to restrict.
+  # inferenceModels: >-
+  #   ["claude-opus-4","claude-sonnet-4","claude-haiku-4-5"]

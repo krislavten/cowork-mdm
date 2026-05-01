@@ -1,0 +1,25 @@
+name: mcp-only
+description: |
+  Skeleton for managed MCP servers and egress, without setting a provider.
+  Use this when you want to overlay MCP + egress rules onto an existing
+  provider profile (via `cowork-mdm profile merge` in a future release),
+  or standalone if the host's provider config lives elsewhere.
+
+  IMPORTANT: Do NOT commit actual MCP server URLs with embedded tokens to
+  source control. Populate these in your enterprise deployment script, not
+  in this template. The placeholder here is intentionally obvious.
+
+values:
+  # Allow all egress so MCP servers can reach anything. Tighten this in
+  # production by listing specific hostnames instead of ["*"].
+  coworkEgressAllowedHosts: >-
+    ["*"]
+
+  # Managed MCP servers — one array entry per server. Each entry needs at
+  # least {name, url, transport}. Add toolPolicy to auto-allow specific
+  # tools (otherwise every call prompts the user). See schema for details.
+  #
+  # REMOVE THIS PLACEHOLDER and fill in your actual MCP endpoints before
+  # deploying. Leave the jsonString well-formed JSON.
+  managedMcpServers: >-
+    [{"name":"REPLACE_ME","url":"https://mcp.example.corp/sse","transport":"sse","toolPolicy":{}}]
