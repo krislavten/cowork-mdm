@@ -454,8 +454,10 @@ func shortenHash(h plumbing.Hash) string {
 
 func basenameFromURL(url string) string {
 	url = strings.TrimSuffix(url, ".git")
-	url = strings.TrimSuffix(url, "/")
-	if i := strings.LastIndex(url, "/"); i >= 0 {
+	url = strings.TrimRight(url, "/\\")
+	// Use the rightmost separator — git URLs use '/', but Windows file://
+	// URLs can carry '\' from native path strings.
+	if i := strings.LastIndexAny(url, "/\\"); i >= 0 {
 		return url[i+1:]
 	}
 	return ""
