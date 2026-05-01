@@ -2,7 +2,7 @@
 
 > CLI toolkit for deploying Claude Desktop in the enterprise: MDM config profiles, plugin marketplace management, and per-host diagnostics.
 
-**Status**: pre-release / v0.2 in development. See [docs/execution/TASKS.md](docs/execution/TASKS.md) for current progress.
+**Status**: **v0.1 — schema + path reference.** v0.2 adds profile generation, marketplace management, and diagnostics (in progress — see [docs/execution/TASKS.md](docs/execution/TASKS.md)).
 
 **Not affiliated with Anthropic.** This project is an independent effort based on reverse-engineering the public Claude Desktop application.
 
@@ -25,48 +25,39 @@ brew install cowork-mdm
 
 ## Commands
 
-### Schema reference
+### Shipped in v0.1
 
 ```bash
 cowork-mdm schema list                     # all 51 keys (name, type, scope, appMin)
-cowork-mdm schema show inferenceProvider   # details: description, example, legacyAlias
+cowork-mdm schema show inferenceProvider   # details: description, example, allowed values
+
+cowork-mdm paths show                      # host paths cowork-mdm reads
+cowork-mdm paths show --os windows         # simulate a different platform
+
+cowork-mdm --version
 ```
 
-### Profile generation
+Both subcommands accept `--json` for machine-readable output.
+
+### Planned for v0.2
 
 ```bash
-cowork-mdm profile new                                    # interactive wizard (TUI)
-cowork-mdm profile new --template bedrock-mcp             # non-interactive from template
-cowork-mdm profile validate my.mobileconfig               # check against schema
-cowork-mdm profile export my.mobileconfig --format reg    # convert macOS → Windows
-cowork-mdm profile apply my.mobileconfig                  # local dev: sudo cp to /Library/Managed Preferences/
-cowork-mdm profile status                                 # what's currently applied
-```
+# Profile generation
+cowork-mdm profile new --template bedrock-mcp --out my.mobileconfig
+cowork-mdm profile validate my.mobileconfig
+cowork-mdm profile export my.mobileconfig --format reg
 
-### Marketplace management (macOS)
-
-```bash
+# Marketplace + plugin management (macOS)
 cowork-mdm marketplace add https://github.com/anthropics/claude-plugins-official
-cowork-mdm marketplace update               # git pull all marketplaces + rebuild links
-cowork-mdm plugin list                      # per-plugin source + link state
-cowork-mdm plugin prune                     # remove dangling symlinks
+cowork-mdm marketplace update
+cowork-mdm plugin list / prune
+
+# Diagnostics
+cowork-mdm doctor
+cowork-mdm doctor --fix
 ```
 
-### Diagnostics
-
-```bash
-cowork-mdm doctor                           # check plist, pkg, LaunchAgent, AWS creds, app state
-cowork-mdm doctor --fix                     # auto-repair what's auto-repairable
-```
-
-## Supported platforms
-
-| | macOS | Windows | Linux |
-|---|---|---|---|
-| `schema *` | ✅ | ✅ | ✅ |
-| `profile *` | ✅ `.mobileconfig` | ✅ `.reg` | build-only |
-| `marketplace *`, `plugin *` | ✅ | ❌ v0.2 | ❌ |
-| `doctor` | ✅ | ✅ registry-based | ❌ |
+Spec and task breakdown: [`specs/`](specs/) + [`docs/execution/TASKS.md`](docs/execution/TASKS.md).
 
 ## Contributing
 
