@@ -65,8 +65,13 @@ release:
     **Not affiliated with Anthropic.** This project is an independent tool built on
     public reverse-engineering of the Claude Desktop application.
 
+# Homebrew tap push is gated by HOMEBREW_TAP_GITHUB_TOKEN. When the secret
+# is unset (e.g. first-time releases, or open-source forks), `skip_upload:
+# auto` makes GoReleaser emit the formula locally (in dist/) but skip the
+# push, letting GitHub Release + binaries still ship.
 brews:
   - name: cowork-mdm
+    skip_upload: '{{ if eq .Env.HOMEBREW_TAP_GITHUB_TOKEN "" }}true{{ else }}false{{ end }}'
     repository:
       owner: krislavten
       name: homebrew-tap
