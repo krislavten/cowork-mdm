@@ -71,3 +71,47 @@ To resume:
 4. Start M1: spawn first agent for task-01 (issue #4) OR task-02 (issue #5), or both in parallel (no file conflict).
 
 Agent spawn template: see TASKS.md task descriptions + `~/.claude/workflows/agent-swarm/templates/agent-prompts/first-agent.md` (adapt the PNPM-specific bits for Go — replace `pnpm build` with `go build ./...`, etc.).
+
+---
+
+## 2026-05-01 — v0.1.0 shipped; swarm paused; M2+ deferred
+
+### What changed
+
+- **task-01 (#4) merged** — internal/schema/ with 51-key embedded schema, Load/Find/Validate, extract maintainer tool. PR #18. Sparring round: 2 SHOULD-FIX, fix #1 (Key.Default) applied in-tree, fix #2 deferred.
+- **task-02 (#5) merged** — internal/paths/ platform-aware resolver. PR #19. Sparring round: 1 MUST-FIX (HOME="/" edge case producing relative path), fixed in-tree.
+- **v0.1.0 released** — PR #20 added cobra wiring + `schema list/show` + `paths show [--os]` subcommands, tests. PR #21 gated homebrew publish on HOMEBREW_TAP_GITHUB_TOKEN (skip_upload template), unblocking the release after the first push failed on 401.
+- **GoReleaser shipped 6 platform archives + checksums** to https://github.com/krislavten/cowork-mdm/releases/tag/v0.1.0 .
+
+### Why v0.2 paused
+
+After task-01 + task-02 merged, I tried to spawn agents for task-03 (profile core), task-07 (marketplace), task-08 (plugin) as three parallel workers. All three stalled at the "reading spec" step with no filesystem writes, tripped by the 600s stream watchdog. Two earlier agents (task-01, task-02) had also stalled mid-flow; I hand-recovered both by running verify + Sparring + commit myself.
+
+Five consecutive subagent stalls on this project, zero successful end-to-end subagent completions, suggests the current runtime is not suited for long-running multi-step subagent tasks that read ~2000 lines of specs and then write ~1000 lines of Go.
+
+**Decision (with user): collapse v0.2's ambition to a v0.1 ship-now + defer v0.2 to classic single-session incremental builds.** Each future session does one task (maybe two if small), in the coordinator's own worktree, no subagent tier.
+
+### Next session pickup
+
+1. `git pull`
+2. `gh pr list --state open` (should be empty)
+3. `gh issue list --state open` (should be 11 — tasks 03..docs)
+4. Pick one task from docs/execution/TASKS.md. Start with **task-03** (profile core) — gates task-04, 05, 06, apply, 10, 11. See specs/profile.md (has all the context you need — no need to re-read everything).
+5. Work directly in `/Users/kris/develop/cowork-mdm` (no worktree needed unless paralleling), use feat/task-03 branch.
+6. Follow the standard commit gate: gofmt / vet / cross-build / verify.sh task-03 / /codex:rescue APPROVE / commit / push / PR / CI / merge.
+7. Once task-03 merges, next session can do task-04 OR task-07/task-08/task-apply (any M2 task that only needs task-02+03).
+
+### Install your own v0.1.0
+
+```bash
+# macOS arm64:
+curl -L https://github.com/krislavten/cowork-mdm/releases/download/v0.1.0/cowork-mdm_0.1.0_darwin_arm64.tar.gz | tar -xz
+./cowork-mdm schema show inferenceProvider
+./cowork-mdm paths show --os darwin
+```
+
+### Unresolved
+
+- `HOMEBREW_TAP_GITHUB_TOKEN` still not set — `brew install krislavten/tap/cowork-mdm` won't work until that's configured on the repo.
+- GitHub Actions deprecation warnings for Node.js 20 actions (non-blocking, deadline June 2026). Upgrade when we next touch .github/workflows/.
+
