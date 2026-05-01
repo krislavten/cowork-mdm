@@ -313,10 +313,14 @@ func parseValue(dec *xml.Decoder, start xml.StartElement) (any, error) {
 		}
 		return f, nil
 	case "true":
-		dec.Skip()
+		if err := dec.Skip(); err != nil {
+			return nil, err
+		}
 		return true, nil
 	case "false":
-		dec.Skip()
+		if err := dec.Skip(); err != nil {
+			return nil, err
+		}
 		return false, nil
 	case "array":
 		var arr []any

@@ -30,6 +30,12 @@ func TestEncodeMobileConfig_GoldenBedrockBasic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EncodeMobileConfig: %v", err)
 	}
+	// Normalize line endings: on Windows runners, git may check out the
+	// golden with CRLF even though we ship it as LF, and our encoder
+	// always emits LF. Compare LF-normalized so CI stays green without
+	// relying on the runner's core.autocrlf config.
+	want = bytes.ReplaceAll(want, []byte("\r\n"), []byte("\n"))
+	got = bytes.ReplaceAll(got, []byte("\r\n"), []byte("\n"))
 	if !bytes.Equal(want, got) {
 		t.Errorf("bedrock-basic golden drift — diff:\nWANT:\n%s\n\nGOT:\n%s",
 			string(want), string(got))

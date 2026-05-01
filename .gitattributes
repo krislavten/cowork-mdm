@@ -1,0 +1,6 @@
+# Preserve LF line endings on files that tests compare byte-exact.
+# Without this, git on Windows converts to CRLF at checkout and the
+# golden tests fail there.
+*.golden.* binary
+*.mobileconfig text eol=lf
+*.plist text eol=lf
