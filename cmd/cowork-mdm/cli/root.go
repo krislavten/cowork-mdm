@@ -1,18 +1,14 @@
 // Package cli wires the cowork-mdm command-line interface.
 //
-// Shipped surface (v0.1 + v0.2 so far):
+// v0.2 surface:
 //
-//	cowork-mdm schema list              — list all 51 MDM keys
-//	cowork-mdm schema show KEY          — show one key's full detail
-//	cowork-mdm paths show               — show resolved host paths
-//	cowork-mdm profile templates        — list built-in profile templates
-//	cowork-mdm profile new              — generate a profile (mobileconfig/plist)
-//	cowork-mdm profile validate FILE    — validate against the schema
-//	cowork-mdm profile apply FILE       — write to managed-prefs (needs root/admin)
-//	cowork-mdm profile status           — read current managed profile
-//	cowork-mdm --version                — print version
-//
-// Remaining v0.2 commands (marketplace, plugin, doctor) arrive in later PRs.
+//	cowork-mdm schema list / show
+//	cowork-mdm paths show
+//	cowork-mdm profile templates / new / validate / apply / status
+//	cowork-mdm marketplace add / list / update / remove / link
+//	cowork-mdm plugin list / show / unlink / prune
+//	cowork-mdm doctor [--fix] [--json]
+//	cowork-mdm --version
 package cli
 
 import (
@@ -65,6 +61,9 @@ func NewRootCommand(info BuildInfo, stdout, stderr io.Writer) *cobra.Command {
 	root.AddCommand(newSchemaCommand(stdout, stderr))
 	root.AddCommand(newPathsCommand(stdout, stderr))
 	root.AddCommand(newProfileCommand(stdout, stderr))
+	root.AddCommand(newMarketplaceCommand(stdout, stderr))
+	root.AddCommand(newPluginCommand(stdout, stderr))
+	root.AddCommand(newDoctorCommand(stdout, stderr))
 
 	return root
 }
