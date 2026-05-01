@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "cowork-mdm",
+  "description": "Claude Desktop enterprise MDM toolkit — profile authoring, org plugin marketplace, per-host diagnostics",
+  "owner": {
+    "name": "krislavten"
+  },
+  "plugins": [
+    {
+      "name": "cowork-mdm",
+      "description": "Drive the cowork-mdm CLI from inside Claude Code: generate Claude Desktop MDM profiles (.mobileconfig / plist), install org plugins from git marketplaces, and diagnose broken hosts. Requires the cowork-mdm CLI on PATH (brew install krislavten/tap/cowork-mdm).",
+      "source": "./plugin",
+      "category": "enterprise",
+      "homepage": "https://github.com/krislavten/cowork-mdm"
+    }
+  ]
+}
