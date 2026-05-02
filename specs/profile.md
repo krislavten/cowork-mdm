@@ -56,11 +56,23 @@ Each encoder is a single function in its own file:
 func EncodeMobileConfig(p *Profile, opts MobileConfigOpts) ([]byte, error)
 
 type MobileConfigOpts struct {
-    PayloadIdentifier    string // default "com.yuanli.cowork-mdm.<slug>"
-    PayloadUUID          string // default random v4
-    PayloadOrganization  string // default empty
-    PayloadScope         string // "System" (default) | "User"
+    // Fully explicit identifier. Wins over all fallback sources when set.
+    PayloadIdentifier       string
+    // Reverse-DNS prefix; composed as "<prefix>.<slug-of-name>". Ignored
+    // if PayloadIdentifier is non-empty.
+    PayloadIdentifierPrefix string
+    PayloadUUID             string // default random v4
+    PayloadOrganization     string // default empty
+    PayloadScope            string // "System" (default) | "User"
 }
+
+// PayloadIdentifier resolution precedence (first non-empty wins):
+//   1. opts.PayloadIdentifier         — fully-qualified override
+//   2. opts.PayloadIdentifierPrefix   — CLI --payload-identifier-prefix
+//   3. $COWORK_MDM_PAYLOAD_ID_PREFIX  — env var fallback
+//   4. DefaultPayloadIdentifierPrefix = "com.cowork-mdm" — package default
+//
+// Layers 2–4 all compose as "<prefix>.<slug-of-profile-name>".
 
 // encode_plist.go — raw com.anthropic.claudefordesktop.plist (no MobileConfig wrapper)
 func EncodePlist(p *Profile) ([]byte, error)

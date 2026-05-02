@@ -32,9 +32,23 @@ func status(opts StatusOptions) (*StatusReport, error) {
 		return nil, fmt.Errorf("managed.Status: read %s: %w", target, err)
 	}
 	rep.Present = true
-	p, decoded, err := profile.DecodePlist(data)
-	if err != nil {
-		rep.ParseError = err.Error()
+	// Auto-detect format: `status --source` can point at a .plist
+	// (default managed-prefs shape) or a .mobileconfig (Custom Settings
+	// payload from the CLI's `profile new` default output). Without
+	// detection the wrapper plist's outer keys leak into the report.
+	var (
+		p       *profile.Profile
+		decoded profile.DecodeReport
+		decErr  error
+	)
+	switch profile.Detect(data) {
+	case "mobileconfig":
+		p, decoded, decErr = profile.DecodeMobileConfig(data)
+	default:
+		p, decoded, decErr = profile.DecodePlist(data)
+	}
+	if decErr != nil {
+		rep.ParseError = decErr.Error()
 		return rep, nil
 	}
 	rep.Profile = p
