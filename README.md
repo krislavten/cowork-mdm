@@ -33,8 +33,10 @@ cowork-mdm paths show                      # host paths cowork-mdm reads
 cowork-mdm paths show --os windows         # simulate a different platform
 
 # Profile authoring (YAML → .mobileconfig / plist)
+# --template and --from are mutually exclusive; pick one:
 cowork-mdm profile templates
-cowork-mdm profile new --template bedrock-basic --from overrides.yaml --out my.mobileconfig
+cowork-mdm profile new --template bedrock-basic --out my.mobileconfig  # built-in verbatim
+cowork-mdm profile new --from overrides.yaml --out my.mobileconfig     # your own YAML
 cowork-mdm profile validate my.mobileconfig
 cowork-mdm profile status                  # what's currently active on this host
 

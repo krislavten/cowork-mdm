@@ -69,17 +69,9 @@ above and offer to hand them a `.mobileconfig` instead.
 ## Verifying status
 
 `cowork-mdm profile status` reads the active plist / registry key and
-reports what's currently live.
-
-Human output:
-
-```
-platform: darwin
-target:   /Library/Managed Preferences/com.anthropic.claudefordesktop.plist
-present:  yes
-keys:     8
-unknown:  0
-```
+reports what's currently live. The JSON form is the source of truth for
+the field contract; the human form is a rendering for eyeballs and may
+omit fields that are absent / null.
 
 JSON output (parse this to reason programmatically):
 
@@ -87,9 +79,29 @@ JSON output (parse this to reason programmatically):
 cowork-mdm profile status --json
 ```
 
-Fields: `platform`, `targetPath`, `present`, `profile.values[]` (decoded key
-set), `unknownKeys[]` (keys in the plist that `cowork-mdm`'s embedded schema
-doesn't recognize — usually a sign the host is newer than your CLI).
+Shape:
+
+```
+{
+  "platform":    "darwin" | "windows",
+  "targetPath":  string,                      // plist path or registry key
+  "present":     bool,
+  "profile": {
+    "name":   string,                         // "" when decoded from an on-disk plist
+    "values": { "<key>": <value>, ... }       // map, NOT array — jq with .profile.values["KEY"]
+  },
+  "unknownKeys": [ {"key":"…","raw":"…"}, ... ] | null,
+  "parseError":  string                       // "" when parse succeeded
+}
+```
+
+Notes that bite parsers:
+- `profile.values` is a **JSON object** (map keyed by preference name),
+  not an array. Access with `jq '.profile.values.inferenceProvider'`.
+- `unknownKeys` is `null` when there are none, not `[]`. Guard with
+  `jq '.unknownKeys // [] | length'`.
+- The human-output table **does not** include an `unknown: 0` line — only
+  `unknownKeys` in JSON carries that data.
 
 ### "I pushed but status says not present"
 
@@ -108,8 +120,9 @@ doesn't recognize — usually a sign the host is newer than your CLI).
 - Verify the `appMin` of each key with `cowork-mdm schema show KEY`. If the
   user's Claude Desktop is older than the `appMin`, that key is silently
   ignored.
-- Run `cowork-mdm profile status --json | jq .unknownKeys` — if any of
-  your keys show up as unknown, your plist has a typo or the schema drifted.
+- Check `unknownKeys`: `cowork-mdm profile status --json | jq '.unknownKeys
+  // []'`. A non-empty list means your plist has a typo or the schema
+  drifted; `null` or `[]` is clean.
 
 ## System-scope vs user-scope plists
 

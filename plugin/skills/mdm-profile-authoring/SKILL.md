@@ -45,8 +45,8 @@ is `stringArray`, not `jsonString`.
 1. schema list [--json]                 # orient (--json is stable, table output is for humans)
 2. schema show <key> [--json]           # drill into each key
 3. profile templates                    # pick a starter
-4. Write overrides.yaml                 # your enterprise values (secrets here, NOT in template dir)
-5. profile new --template X --from overrides.yaml --out out.mobileconfig
+4. Write overrides.yaml                 # your YAML — see "Overrides YAML shape" below
+5. profile new --from overrides.yaml --out out.mobileconfig
 6. profile validate out.mobileconfig    # gate — succeeds silently, fails loud with exit 1
 ```
 
@@ -54,10 +54,33 @@ is `stringArray`, not `jsonString`.
 prints the offending key and exits non-zero. The output is human-readable
 text, not JSON — for programmatic checks, rely on the exit code.
 
-**Never edit the template files under the repo.** They're shipped in the
-binary and are meant to be provider-neutral scaffolds. Enterprise-specific
-values (ARNs, MCP tokens, allowed-host lists) belong in a **user YAML file**
-that stays private.
+### `--template` vs `--from` are mutually exclusive
+
+`profile new` accepts **either** `--template NAME` (use a built-in template
+verbatim) **or** `--from FILE` (use your own YAML). You cannot combine them
+on the same invocation — `cowork-mdm profile new --template X --from Y`
+errors out.
+
+Idiomatic paths:
+
+- **Template verbatim** — `profile new --template bedrock-basic --out out.mobileconfig`.
+  Emits the template as-is. Useful to preview the default shape, or pipe
+  through `--set KEY=VALUE` flags for small tweaks.
+- **Your own YAML** (recommended for enterprise use) — write your own
+  `overrides.yaml` following the same schema as the built-in templates
+  (see next section), then `profile new --from overrides.yaml`. This is
+  what you want when you have enterprise-specific values (ARNs, tokens)
+  that should not live in the repo.
+
+To start from a built-in template and customize it, **copy** one of the
+files under `internal/profile/templates/<name>.yaml` in the cowork-mdm
+source into your own `overrides.yaml`, edit freely, and pass with `--from`.
+The built-in templates are not a base layer — there is no merge step.
+
+**Never edit the template files inside the cowork-mdm repo.** They're
+shipped in the binary and are meant to be provider-neutral scaffolds.
+Enterprise-specific values (ARNs, MCP tokens, allowed-host lists) belong
+in your private `overrides.yaml`.
 
 ## The five built-in templates
 
@@ -102,8 +125,12 @@ Key points:
 - YAML `>-` ("folded, strip") joins wrapped lines into a single string
   without a trailing newline. Use it for long inline JSON.
 - Booleans go raw (`true` / `false`), not quoted.
-- Overrides **replace** the template's value for that key; templates and
-  overrides merge at the key level.
+- The `--from` YAML is the **complete** input to `profile new`. It is not
+  an overlay on a built-in template — no merge step happens. If you want
+  template defaults as a starting point, copy the template file's contents
+  into your YAML, then edit. The only live override mechanism on the CLI
+  is the `--set KEY=VALUE` flag, which can be combined with `--template`
+  or `--from`.
 
 ## The `[1m]` suffix on Bedrock ARNs
 
@@ -122,7 +149,6 @@ are, the suffix gives users a 1M-context picker entry.
 
 ```bash
 cowork-mdm profile new \
-  --template bedrock-basic \
   --from overrides.yaml \
   --out /tmp/cowork.mobileconfig
 

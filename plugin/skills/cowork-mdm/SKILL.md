@@ -13,24 +13,31 @@ wrapper around `cowork-mdm` invocations.
 ## Pre-flight: the CLI must be on PATH
 
 ```bash
-cowork-mdm --version  # → 0.3.0 (commit ..., built ...)
+cowork-mdm --version
 ```
 
-If this fails, stop and tell the user to install it:
+Expected output is a single line starting with `cowork-mdm version`,
+followed by either a released tag (e.g. `0.3.0 (commit abc1234, built
+2026-05-01)`) **or** the string `dev (commit none, built unknown)` on a
+developer-built binary. Both are valid — the plugin works against either.
+Only treat this as broken if the command is not found or exits non-zero.
+
+If it fails with "command not found" or equivalent, stop and tell the
+user to install it:
 
 ```bash
 brew install krislavten/tap/cowork-mdm
 # or download a binary from https://github.com/krislavten/cowork-mdm/releases
 ```
 
-Do not try to work around a missing CLI. The plugin cannot do anything useful
-without it.
+Do not try to work around a missing CLI. The plugin cannot do anything
+useful without it.
 
 ## Pick a sub-skill by task
 
 | User wants to … | Load sub-skill | Typical commands |
 | --- | --- | --- |
-| Look up a Managed Preferences key, draft / edit a profile for Bedrock/Vertex/Azure/Gateway/MCP-only | **mdm-profile-authoring** | `schema list`, `schema show KEY`, `profile templates`, `profile new --template … --from …`, `profile validate` |
+| Look up a Managed Preferences key, draft / edit a profile for Bedrock/Vertex/Azure/Gateway/MCP-only | **mdm-profile-authoring** | `schema list`, `schema show KEY`, `profile templates`, `profile new --template NAME` OR `profile new --from overrides.yaml` (mutually exclusive), `profile validate` |
 | Push an existing profile to real hosts; investigate why it isn't taking effect | **mdm-profile-deploy** | `profile apply --dry-run`, `profile status` |
 | Install / update / remove org plugin marketplaces; clean dangling symlinks | **mdm-plugins** | `marketplace add/list/update/remove`, `plugin list/show/prune` |
 | Diagnose a specific user's broken Claude Desktop install | **mdm-doctor** | `paths show`, `doctor`, `doctor --fix`, `doctor --json` |
