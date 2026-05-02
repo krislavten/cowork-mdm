@@ -1,0 +1,36 @@
+name: gateway-deepseek
+description: |
+  Claude Desktop pointed at DeepSeek's Anthropic-compatible endpoint via
+  inferenceProvider=gateway. Replace the API key placeholder with the token
+  your IT team issues from DeepSeek's console before deploying.
+
+  # Source: https://api-docs.deepseek.com/guides/anthropic_api
+  #   - base URL: https://api.deepseek.com/anthropic
+  #   - auth header: x-api-key (env var ANTHROPIC_API_KEY in their docs)
+  #
+  # Companion step: this template only carries LLM config. To also deliver
+  # company skills / slash commands / MCPs, run (after profile apply):
+  #   cowork-mdm marketplace add https://github.com/<your-org>/claude-org-plugins
+  # which clones the repo into /Library/Application Support/Claude/org-plugins/
+  # and symlinks each plugin into place. See `mdm-plugins` skill for details.
+
+values:
+  inferenceProvider: gateway
+
+  disableDeploymentModeChooser: true
+
+  inferenceGatewayBaseUrl: https://api.deepseek.com/anthropic
+
+  # DeepSeek's Anthropic-compatible endpoint accepts x-api-key (per its doc's
+  # "Fully Supported" compatibility table).
+  inferenceGatewayAuthScheme: x-api-key
+
+  # Replace with the token from DeepSeek's console. Never commit real keys to
+  # this template — keep them in your private overrides YAML instead.
+  inferenceGatewayApiKey: REPLACE_WITH_YOUR_API_KEY
+
+  # Optional: pin a model list. Without this the gateway's /v1/models result
+  # is used. DeepSeek's doc example cites deepseek-v4-pro; unrecognized names
+  # fall back server-side to deepseek-v4-flash.
+  # inferenceModels: >-
+  #   ["deepseek-v4-pro","deepseek-v4-flash"]

@@ -1,13 +1,23 @@
 package profile
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 )
 
-func TestTemplateNames_IncludesAllFive(t *testing.T) {
+func TestTemplateNames_IncludesAll(t *testing.T) {
 	names := TemplateNames()
-	want := []string{"bedrock-basic", "foundry", "gateway", "mcp-only", "vertex"}
+	want := []string{
+		"bedrock-basic",
+		"foundry",
+		"gateway",
+		"gateway-deepseek",
+		"gateway-glm",
+		"gateway-minimax",
+		"mcp-only",
+		"vertex",
+	}
 	if len(names) != len(want) {
 		t.Fatalf("TemplateNames() = %v, want %v", names, want)
 	}
@@ -124,5 +134,72 @@ values:
 	_, err := LoadTemplateFile(raw)
 	if err == nil || !strings.Contains(err.Error(), "name") {
 		t.Errorf("expected name-missing error, got %v", err)
+	}
+}
+
+func TestLoadTemplate_GatewayVendors(t *testing.T) {
+	cases := []struct {
+		name       string
+		baseURL    string
+		authScheme string
+	}{
+		{"gateway-deepseek", "https://api.deepseek.com/anthropic", "x-api-key"},
+		{"gateway-glm", "https://open.bigmodel.cn/api/anthropic", "bearer"},
+		{"gateway-minimax", "https://api.minimaxi.com/anthropic", "x-api-key"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p, err := LoadTemplate(tc.name)
+			if err != nil {
+				t.Fatalf("LoadTemplate %s: %v", tc.name, err)
+			}
+			if v, _ := p.Get("inferenceProvider"); v != "gateway" {
+				t.Errorf("inferenceProvider = %v, want gateway", v)
+			}
+			if v, _ := p.Get("inferenceGatewayBaseUrl"); v != tc.baseURL {
+				t.Errorf("inferenceGatewayBaseUrl = %v, want %q", v, tc.baseURL)
+			}
+			if v, _ := p.Get("inferenceGatewayAuthScheme"); v != tc.authScheme {
+				t.Errorf("inferenceGatewayAuthScheme = %v, want %q", v, tc.authScheme)
+			}
+			// API key must be the placeholder — regression guard against
+			// accidentally committing a real vendor key to a shipped template.
+			v, _ := p.Get("inferenceGatewayApiKey")
+			key, _ := v.(string)
+			if !strings.Contains(key, "REPLACE_WITH_YOUR_API_KEY") {
+				t.Errorf("inferenceGatewayApiKey = %q, want REPLACE_WITH_YOUR_API_KEY placeholder", key)
+			}
+		})
+	}
+}
+
+func TestLoadTemplate_NoLeakedKeysInGatewayTemplates(t *testing.T) {
+	// Regression guard: the three CN-vendor gateway templates must never
+	// carry a real key. Scan the raw embedded YAML for key-shaped patterns.
+	// Each regex targets a concrete vendor-key prefix + enough entropy to
+	// be unmistakably a real secret, not a prose mention (e.g. "sk-" alone
+	// would false-positive on words like "sk-SNAPSHOT" in a comment).
+	leakPatterns := []*regexp.Regexp{
+		regexp.MustCompile(`sk-[A-Za-z0-9_\-]{20,}`),         // OpenAI / DeepSeek / Anthropic test keys
+		regexp.MustCompile(`Bearer\s+ey[A-Za-z0-9_\-]{20,}`), // JWT literal
+		regexp.MustCompile(`xai-[A-Za-z0-9]{20,}`),           // xAI
+		regexp.MustCompile(`gsk_[A-Za-z0-9]{20,}`),           // Groq
+	}
+	for _, name := range []string{"gateway-deepseek", "gateway-glm", "gateway-minimax"} {
+		t.Run(name, func(t *testing.T) {
+			raw, err := templateFS.ReadFile("templates/" + name + ".yaml")
+			if err != nil {
+				t.Fatalf("read template: %v", err)
+			}
+			text := string(raw)
+			if !strings.Contains(text, "REPLACE_WITH_YOUR_API_KEY") {
+				t.Errorf("%s must contain REPLACE_WITH_YOUR_API_KEY placeholder", name)
+			}
+			for _, re := range leakPatterns {
+				if m := re.FindString(text); m != "" {
+					t.Errorf("%s contains leaked-key match %q — review template before shipping", name, m)
+				}
+			}
+		})
 	}
 }

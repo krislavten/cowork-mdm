@@ -52,11 +52,16 @@ the user.
 
 ### 4. Generate and validate
 
+`--template` and `--from` are **mutually exclusive**. Pick one based on
+whether the user has enterprise-specific values to plug in:
+
 ```bash
-cowork-mdm profile new \
-  --template <provider> \
-  --from overrides.yaml \
-  --out profile.mobileconfig
+# No enterprise overrides — emit a template verbatim (useful for previews):
+cowork-mdm profile new --template <provider> --out profile.mobileconfig
+
+# With enterprise overrides (ARNs, tokens, MCP list) — use your own YAML:
+cowork-mdm profile new --from overrides.yaml --out profile.mobileconfig
+
 cowork-mdm profile validate profile.mobileconfig
 ```
 
@@ -70,6 +75,25 @@ spot-check. Tell them the next step is **not** local apply — it's handing
 the file to their MDM (Jamf/Intune/Kandji). If they want to test locally
 on this very Mac, suggest `/cowork-mdm:deploy profile.mobileconfig` which
 runs a dry-run preview without touching disk.
+
+### 6. Offer companion plugin-marketplace install
+
+A profile carries LLM + MCP config but not skills or slash commands.
+After validate succeeds, **ask** the user whether they also want to install
+the org's plugin marketplace (which delivers skills / slash commands / MCPs
+via `org-plugins/`). Do not assume yes. If the user confirms and supplies
+the marketplace URL, run:
+
+```bash
+cowork-mdm marketplace add <url>
+cowork-mdm plugin list
+```
+
+`marketplace add` writes under `/Library/Application Support/Claude/
+org-plugins/`, which typically requires sudo — **do not** run sudo on the
+user's behalf. If the command errors with permission denied, tell the user
+exactly which command to re-run with `sudo` and stop. If the org hasn't
+published a plugin marketplace yet, skip this step silently.
 
 ### Rules
 
