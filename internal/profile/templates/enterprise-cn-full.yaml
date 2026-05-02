@@ -1,0 +1,115 @@
+name: enterprise-cn-full
+description: |
+  One-shot enterprise onboarding scaffold for Chinese organizations deploying
+  Claude Desktop at fleet scale. Composes LLM + standalone MCP + egress +
+  auto-update + telemetry + sandbox policy into a single profile.
+
+  # THIS IS A SCAFFOLD, NOT A PRODUCTION PROFILE.
+  # Every REPLACE_* placeholder below MUST be filled in before deploying.
+  # `cowork-mdm profile validate` only checks schema correctness — it does
+  # NOT catch leftover placeholders. The intended usage is:
+  #
+  #   1. Copy this file to <your-org>/overrides.yaml
+  #   2. Fill every REPLACE_* placeholder with real values
+  #   3. cowork-mdm profile new --from overrides.yaml --out company.mobileconfig
+  #   4. grep -q "REPLACE_" company.mobileconfig && echo "STOP: placeholders present"
+  #   5. cowork-mdm profile validate company.mobileconfig
+  #
+  # See docs/deployment-cn.md for the full deployment cookbook.
+  #
+  # --- LLM vendor table ---
+  # Pick one row below and paste its base URL + auth scheme into the
+  # inferenceGateway* values. If your org has a more specialized recipe,
+  # use one of the per-vendor templates instead (gateway-deepseek /
+  # gateway-glm / gateway-minimax).
+  #
+  #   Vendor    | inferenceGatewayBaseUrl                      | AuthScheme
+  #   ----------|----------------------------------------------|-----------
+  #   DeepSeek  | https://api.deepseek.com/anthropic           | x-api-key
+  #   Zhipu GLM | https://open.bigmodel.cn/api/anthropic       | bearer
+  #   MiniMax   | https://api.minimaxi.com/anthropic           | x-api-key
+  #
+  # --- Auto-update policy ---
+  # This template sets autoUpdaterEnforcementHours=168 (7 days). That's a
+  # forced-install window, NOT a hard block: Anthropic security patches
+  # still reach the fleet within a week. To hard-block updates entirely
+  # (stricter orgs; requires you to manually ship repackaged builds):
+  # replace `autoUpdaterEnforcementHours` with `disableAutoUpdates: true`.
+  #
+  # --- What this template does NOT deliver ---
+  # Skills, slash commands, hooks, and plugin-bundled MCPs do NOT ship
+  # inside the mobileconfig. They live under /Library/Application Support/
+  # Claude/org-plugins/ and are delivered via a separate Script payload
+  # invoking `cowork-mdm marketplace add <org-plugins-repo>`. See
+  # docs/deployment-cn.md Section 5 for the Script payload recipe, and
+  # docs/research/skills-plugins-mdm.md for why bootstrapUrl is NOT a
+  # substitute.
+  #
+  # --- Bootstrap config rotation (advanced) ---
+  # `bootstrapUrl` / `bootstrapEnabled` have no MDM scope in Claude
+  # Desktop's schema (both scope=null per #31 research), so this template
+  # does NOT set them. If your org needs a remote config-rotation endpoint
+  # for LLM / OTLP keys, set bootstrapUrl via the app's UI on each
+  # machine, or investigate per-user settings pushed through a different
+  # channel.
+
+values:
+  # ----- LLM provider (gateway mode) -----
+  inferenceProvider: gateway
+
+  # Skip the first-launch provider-picker screen. Safe once all the
+  # gateway-* values below are filled in.
+  disableDeploymentModeChooser: true
+
+  # REPLACE per the vendor table at the top of this file.
+  inferenceGatewayBaseUrl: https://REPLACE_WITH_VENDOR_BASE_URL
+  inferenceGatewayAuthScheme: bearer
+  inferenceGatewayApiKey: REPLACE_WITH_YOUR_API_KEY
+
+  # Pin a model list so users see the org-approved models only. Leave the
+  # JSON-array-as-string form (schema type: stringArray). Names below are
+  # generic placeholders — replace with your vendor's Anthropic-compatible
+  # model IDs (e.g. "deepseek-v4-pro" / "GLM-4.7" / "MiniMax-M2.7").
+  inferenceModels: >-
+    ["REPLACE_WITH_MODEL_ID_1","REPLACE_WITH_MODEL_ID_2"]
+
+  # ----- Standalone MCP servers -----
+  # JSON array of {name, url, transport, toolPolicy?} entries. Tokens in
+  # these URLs are readable by anyone with plist read access — rotate via
+  # MDM push rather than embedding long-lived secrets.
+  # Plugin-bundled MCPs (declared in a plugin's plugin.json) ship via
+  # org-plugins/, NOT this key.
+  managedMcpServers: >-
+    [{"name":"REPLACE_ME","url":"https://mcp.REPLACE_ME.internal/sse","transport":"sse","toolPolicy":{}}]
+
+  # ----- Egress allowlist -----
+  # Hostnames the Cowork sandbox may reach for tool calls and package
+  # installs. The inference provider host is always allowed automatically;
+  # add any internal MCP hosts + package registries you need. Supports
+  # *.example.com wildcards. Set to ["*"] to disable egress filtering
+  # entirely (not recommended).
+  coworkEgressAllowedHosts: >-
+    ["*.REPLACE_WITH_YOUR_INTERNAL_DOMAIN"]
+
+  # ----- Auto-update policy -----
+  # Forces pending updates to install after 7 days regardless of user
+  # activity. See header for trade-off vs disableAutoUpdates.
+  autoUpdaterEnforcementHours: 168
+
+  # ----- Telemetry -----
+  # Block product-usage analytics to Anthropic. Essential telemetry
+  # (crash reports, update checks) still flows unless you also set
+  # disableEssentialTelemetry.
+  disableNonessentialTelemetry: true
+
+  # ----- Sandbox / tool policy (optional) -----
+  # Uncomment and customize to restrict which built-in tools are
+  # available to employees. Tool names to disable are documented at:
+  # cowork-mdm schema show disabledBuiltinTools
+  # disabledBuiltinTools: >-
+  #   ["WebSearch"]
+
+  # Uncomment to lock the set of folders employees may attach as
+  # workspaces. Absolute paths; leading ~ expands per-user.
+  # allowedWorkspaceFolders: >-
+  #   ["~/work","/Volumes/ProjectShare"]
