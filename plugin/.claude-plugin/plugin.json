@@ -1,0 +1,10 @@
+{
+  "name": "cowork-mdm",
+  "version": "0.3.0",
+  "description": "Claude Desktop MDM: author .mobileconfig / plist profiles, manage the org plugin marketplace, diagnose hosts. Drives the cowork-mdm CLI via Bash.",
+  "author": {
+    "name": "krislavten",
+    "url": "https://github.com/krislavten"
+  },
+  "homepage": "https://github.com/krislavten/cowork-mdm"
+}
