@@ -2,7 +2,7 @@
 
 **English** · [中文](README.zh.md)
 
-> Deploy Claude Desktop across enterprise fleets — MDM profiles for Bedrock / Vertex / Foundry / third-party and self-hosted LLM gateways, org-plugin distribution, per-host diagnostics.
+> Deploy Claude Desktop across enterprise fleets — MDM profiles for open-weights model endpoints, hyperscaler routes (Bedrock / Vertex / Foundry), and self-hosted deployments, plus org-plugin distribution and per-host diagnostics.
 
 **Status**: **v0.3 — CLI + Claude Code plugin.** The CLI generates MDM profiles (`.mobileconfig` / plist), manages the org plugin marketplace, and diagnoses broken hosts. A Claude Code plugin layer (skills + slash commands) makes the CLI self-driving inside an agent. Both ship together.
 
@@ -10,7 +10,7 @@
 
 ## Why cowork-mdm
 
-**Claude Desktop supports third-party Anthropic-compatible LLM providers.** Enterprises pick providers based on cost, data residency, compliance, and model preference — and Claude Desktop accepts all of them through `inferenceProvider=gateway` or dedicated Bedrock / Vertex / Foundry keys. That covers hyperscaler routes (AWS Bedrock, Google Vertex, Azure AI Foundry), self-hosted vLLM / SGLang behind an Anthropic-compatible shim, and third-party gateway services (DeepSeek, Zhipu GLM, MiniMax, Mistral's API, and similar). `cowork-mdm` lets IT deploy whichever choice at fleet scale.
+**Claude Desktop accepts any Anthropic-compatible LLM backend.** Many enterprises don't run Claude Desktop against `api.anthropic.com` — they point it at open-weights model families and compatible providers (such as DeepSeek, Qwen, Zhipu GLM, MiniMax, Llama, Mistral, and similar) served through Anthropic-compatible endpoints, or at self-hosted vLLM / SGLang clusters behind the same shim, or at hyperscaler-managed routes via AWS Bedrock / Google Vertex / Azure AI Foundry. Which route an org picks comes down to cost, data residency, compliance, and model preference. Claude Desktop handles all three through `inferenceProvider=gateway` or the dedicated Bedrock / Vertex / Foundry keys; `cowork-mdm` lets IT deploy whichever choice at fleet scale.
 
 **But the deployment config is non-trivial.** Gateway URL + auth scheme + managed MCP servers + egress allowlist + auto-update policy + telemetry policy + sandbox constraints — Claude Desktop reads 51 managed-preferences keys, of which Anthropic's public enterprise documentation covers only 8. End users can't self-serve this; IT has to push it at fleet scale via Jamf / Microsoft Intune / Kandji. `cowork-mdm` surfaces the full schema (extracted from the app's embedded zod schema, currently pinned to Claude.app 1.5354.0), generates correct MDM profiles, and runs per-host diagnostics so IT doesn't have to reverse-engineer the Electron bundle.
 
@@ -32,17 +32,18 @@ cowork-mdm profile validate company.mobileconfig
 # Then push company.mobileconfig via your MDM — full recipe in the cookbook.
 ```
 
-For Bedrock / Vertex / Foundry deployments, substitute the template name
-— `bedrock-basic`, `vertex`, or `foundry` — and fill `{{ACCOUNT}}` /
-region / model-ID placeholders instead. Same downstream pipeline.
+For hyperscaler-managed routes (Bedrock / Vertex / Foundry), substitute
+the template name — `bedrock-basic`, `vertex`, or `foundry` — and fill
+`{{ACCOUNT}}` / region / model-ID placeholders instead. Same downstream
+pipeline.
 
 ## Enterprise deployment cookbook
 
-**See [docs/deployment-cn.md](docs/deployment-cn.md)** — 8-section end-to-end recipe for gateway-mode deployments:
+**See [docs/deployment-cn.md](docs/deployment-cn.md)** — 8-section end-to-end recipe for gateway-mode deployments, oriented around open-weights models served through Anthropic-compatible endpoints and self-hosted vLLM / SGLang clusters:
 
 1. Prerequisites 2. Pick an LLM provider 3. Generate the profile 4. Validate & lint 5. Distribute via Jamf / Intune / Kandji (with Script payload for plugins) 6. Verify on an employee machine 7. Common failure modes 8. Updating later.
 
-For Bedrock / Vertex / Foundry deployments the same CLI surface applies — start from [`specs/profile.md`](specs/profile.md) and use the `bedrock-basic` / `vertex` / `foundry` built-in templates.
+For hyperscaler-managed routes (Bedrock / Vertex / Foundry) the same CLI surface applies — start from [`specs/profile.md`](specs/profile.md) and use the `bedrock-basic` / `vertex` / `foundry` built-in templates.
 
 ## Command reference
 

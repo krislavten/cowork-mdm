@@ -2,7 +2,7 @@
 
 [English](README.md) · **中文**
 
-> 面向企业集群的 Claude Desktop 下发工具链 —— 覆盖 Bedrock / Vertex / Foundry / 第三方及自托管 LLM 网关的 MDM 配置下发、组织插件分发、主机诊断。
+> 面向企业集群的 Claude Desktop 下发工具链 —— 覆盖开放权重模型接入、云厂商托管路径 (Bedrock / Vertex / Foundry)、自托管部署的 MDM 配置下发、组织插件分发、主机诊断。
 
 **状态**：**v0.3 —— CLI + Claude Code 插件层。** CLI 负责生成 MDM 配置 (`.mobileconfig` / plist)、管理组织插件市场、诊断异常主机。Claude Code 插件层（技能 + 斜杠命令）让 Agent 可以代你驱动 CLI。两者同步发版。
 
@@ -10,7 +10,7 @@
 
 ## 为什么需要 cowork-mdm
 
-**Claude Desktop 支持第三方 Anthropic-兼容 LLM provider。** 企业会基于成本、数据驻留、合规、模型偏好等因素选择不同 provider —— Claude Desktop 通过 `inferenceProvider=gateway` 或专用的 Bedrock / Vertex / Foundry 键全都接得上。这涵盖了云厂商路径 (AWS Bedrock / Google Vertex / Azure AI Foundry)、自托管的 vLLM / SGLang 配合 Anthropic-兼容适配层，以及各类第三方网关服务 (DeepSeek / Zhipu GLM / MiniMax / Mistral API 等)。`cowork-mdm` 让 IT 把任意选择下发到整个集群。
+**Claude Desktop 可以对接任何 Anthropic-兼容的 LLM 后端。** 不少企业并不把 Claude Desktop 指向 `api.anthropic.com` —— 而是指向开放权重模型家族以及兼容厂商 (如 DeepSeek、Qwen、Zhipu GLM、MiniMax、Llama、Mistral 等) 通过 Anthropic-兼容接口提供的服务，或指向自托管的 vLLM / SGLang 集群，或走 AWS Bedrock / Google Vertex / Azure AI Foundry 提供的云厂商托管路径。具体选哪条路径，取决于成本、数据驻留、合规、模型偏好等考量。Claude Desktop 通过 `inferenceProvider=gateway` 或专用的 Bedrock / Vertex / Foundry 键把这三条路径都接住；`cowork-mdm` 让 IT 把任意选择下发到整个集群。
 
 **但部署配置并不简单。** 网关 URL + 鉴权方式 + 托管 MCP 服务 + 出口白名单 + 自动更新策略 + 遥测策略 + 沙箱约束 —— Claude Desktop 要读 51 个 managed-preferences 键，其中 Anthropic 公开企业文档只覆盖 8 个。终端用户没办法自助，IT 必须通过 Jamf / Microsoft Intune / Kandji 按集群规模批量下发。`cowork-mdm` 把完整 schema（从应用内嵌 zod 定义提取，当前锁定在 Claude.app 1.5354.0）暴露出来，生成正确的 MDM 配置，提供主机级诊断，让 IT 不需要自己拆 Electron bundle。
 
@@ -32,17 +32,17 @@ cowork-mdm profile validate company.mobileconfig
 # 接下来通过你公司的 MDM 下发 company.mobileconfig —— 完整步骤见 cookbook。
 ```
 
-Bedrock / Vertex / Foundry 部署同理，把模板名换成 `bedrock-basic` /
-`vertex` / `foundry`，填入 `{{ACCOUNT}}` / region / 模型 ID 占位符即可，
-下游流水线完全一致。
+云厂商托管路径 (Bedrock / Vertex / Foundry) 同理，把模板名换成
+`bedrock-basic` / `vertex` / `foundry`，填入 `{{ACCOUNT}}` / region /
+模型 ID 占位符即可，下游流水线完全一致。
 
 ## 企业部署手册
 
-**完整手册见 [docs/deployment-cn.md](docs/deployment-cn.md)** —— 八节 gateway 模式端到端流程：
+**完整手册见 [docs/deployment-cn.md](docs/deployment-cn.md)** —— 八节 gateway 模式端到端流程，面向开放权重模型通过 Anthropic-兼容接口下发，以及自托管 vLLM / SGLang 集群：
 
 1. 前置准备 2. 选择 LLM provider 3. 生成配置 4. 校验 + lint 5. 通过 Jamf / Intune / Kandji 下发（含插件的 Script payload） 6. 员工机验证 7. 常见失败场景 8. 后续更新。
 
-使用 Bedrock / Vertex / Foundry 的部署同样适用，起点是 [`specs/profile.md`](specs/profile.md) 和内置的 `bedrock-basic` / `vertex` / `foundry` 模板。
+云厂商托管路径 (Bedrock / Vertex / Foundry) 同样适用同一套流程，起点是 [`specs/profile.md`](specs/profile.md) 和内置的 `bedrock-basic` / `vertex` / `foundry` 模板。
 
 ## 命令参考
 
