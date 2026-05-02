@@ -53,6 +53,14 @@ cowork-mdm doctor --fix
 Every subcommand accepts `--json` for machine-readable output. Spec and
 task breakdown: [`specs/`](specs/) + [`docs/execution/TASKS.md`](docs/execution/TASKS.md).
 
+## Enterprise deployment
+
+**Chinese LLM providers (DeepSeek / GLM / MiniMax) + MDM fleet rollout**:
+see [docs/deployment-cn.md](docs/deployment-cn.md) for the full cookbook
+covering Jamf / Intune / Kandji distribution, the `enterprise-cn-full`
+template, and the Script-payload pattern for shipping company plugins
+alongside the mobileconfig.
+
 ## Use as a Claude Code plugin
 
 v0.3 adds a Claude Code plugin layer: five skills + four slash commands

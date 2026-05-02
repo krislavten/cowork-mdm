@@ -10,6 +10,7 @@ func TestTemplateNames_IncludesAll(t *testing.T) {
 	names := TemplateNames()
 	want := []string{
 		"bedrock-basic",
+		"enterprise-cn-full",
 		"foundry",
 		"gateway",
 		"gateway-deepseek",
@@ -185,7 +186,7 @@ func TestLoadTemplate_NoLeakedKeysInGatewayTemplates(t *testing.T) {
 		regexp.MustCompile(`xai-[A-Za-z0-9]{20,}`),           // xAI
 		regexp.MustCompile(`gsk_[A-Za-z0-9]{20,}`),           // Groq
 	}
-	for _, name := range []string{"gateway-deepseek", "gateway-glm", "gateway-minimax"} {
+	for _, name := range []string{"gateway-deepseek", "gateway-glm", "gateway-minimax", "enterprise-cn-full"} {
 		t.Run(name, func(t *testing.T) {
 			raw, err := templateFS.ReadFile("templates/" + name + ".yaml")
 			if err != nil {
@@ -201,5 +202,36 @@ func TestLoadTemplate_NoLeakedKeysInGatewayTemplates(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLoadTemplate_EnterpriseCN(t *testing.T) {
+	p, err := LoadTemplate("enterprise-cn-full")
+	if err != nil {
+		t.Fatalf("LoadTemplate enterprise-cn-full: %v", err)
+	}
+	if v, _ := p.Get("inferenceProvider"); v != "gateway" {
+		t.Errorf("inferenceProvider = %v, want gateway", v)
+	}
+	if v, _ := p.Get("autoUpdaterEnforcementHours"); v != int64(168) {
+		t.Errorf("autoUpdaterEnforcementHours = %v (%T), want int64(168)", v, v)
+	}
+	if v, _ := p.Get("disableNonessentialTelemetry"); v != true {
+		t.Errorf("disableNonessentialTelemetry = %v, want true", v)
+	}
+	if v, _ := p.Get("disableDeploymentModeChooser"); v != true {
+		t.Errorf("disableDeploymentModeChooser = %v, want true", v)
+	}
+	mcp, _ := p.Get("managedMcpServers")
+	if s, ok := mcp.(string); !ok || !strings.Contains(s, "REPLACE_ME") {
+		t.Errorf("managedMcpServers should contain REPLACE_ME placeholder, got %v", mcp)
+	}
+	egress, _ := p.Get("coworkEgressAllowedHosts")
+	arr, ok := egress.([]string)
+	if !ok {
+		t.Fatalf("coworkEgressAllowedHosts should be []string, got %T", egress)
+	}
+	if len(arr) == 0 || !strings.Contains(arr[0], "REPLACE_WITH_YOUR_INTERNAL_DOMAIN") {
+		t.Errorf("coworkEgressAllowedHosts should contain internal-domain placeholder, got %v", arr)
 	}
 }
