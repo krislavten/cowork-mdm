@@ -82,7 +82,7 @@ shipped in the binary and are meant to be provider-neutral scaffolds.
 Enterprise-specific values (ARNs, MCP tokens, allowed-host lists) belong
 in your private `overrides.yaml`.
 
-## The five built-in templates
+## The built-in templates
 
 `cowork-mdm profile templates` prints the current list. As of v0.3:
 
@@ -92,7 +92,39 @@ in your private `overrides.yaml`.
 | `vertex` | Google Vertex AI | project id, region, model IDs |
 | `foundry` | Azure Foundry | endpoint, deployment names |
 | `gateway` | Generic OpenAI-compatible gateway (LLM proxy) | base URL, auth header, model list |
+| `gateway-deepseek` | DeepSeek Anthropic-compatible endpoint | API key; optional `inferenceModels` override |
+| `gateway-glm` | Zhipu GLM Anthropic-compatible endpoint | API key; optional `inferenceModels` override |
+| `gateway-minimax` | MiniMax Anthropic-compatible endpoint | API key; optional `inferenceModels` override |
 | `mcp-only` | No inference override, only locks MCP + egress | `managedMcpServers`, `coworkEgressAllowedHosts` |
+
+The three `gateway-*` CN-vendor templates each pre-bake `inferenceGatewayBaseUrl`
+and `inferenceGatewayAuthScheme` so IT admins only need to supply an API key.
+They're convenience wrappers over the generic `gateway` template and point at
+the vendor's documented Anthropic-compatible endpoint.
+
+### Pair with a plugin marketplace
+
+A profile delivers **LLM config** (`inferenceProvider`, gateway URL, model
+list) and **MCP config** (`managedMcpServers`) — but **not** skills or slash
+commands. Those live in Claude Desktop's `org-plugins/` directory and are
+delivered via the plugin-marketplace pathway:
+
+```bash
+# After `cowork-mdm profile apply` (or the MDM push) lands on the machine:
+cowork-mdm marketplace add https://github.com/<your-org>/claude-org-plugins
+cowork-mdm marketplace update                # later, to refresh
+cowork-mdm plugin list                       # verify what resolved
+```
+
+This clones the org's plugin-marketplace repo into
+`/Library/Application Support/Claude/org-plugins/` and creates top-level
+symlinks for every plugin it discovers. Anthropic's marketplace layout
+(`.claude-plugin/marketplace.json` + `plugins/<name>/...`) is what
+`marketplace add` expects; see `mdm-plugins` skill for details.
+
+If the user's goal is **full enterprise onboarding** (LLM + MCP + skills +
+slash commands), the profile is only half the job — remind the user to also
+run `marketplace add` with their org's plugin repo.
 
 ## Overrides YAML shape
 

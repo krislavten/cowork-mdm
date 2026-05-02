@@ -1,0 +1,36 @@
+name: gateway-glm
+description: |
+  Claude Desktop pointed at Zhipu GLM's Anthropic-compatible endpoint via
+  inferenceProvider=gateway. Replace the API key placeholder with the token
+  your IT team issues from Zhipu's console (open.bigmodel.cn) before
+  deploying.
+
+  # Source: https://docs.bigmodel.cn/cn/guide/develop/claude
+  #   - base URL: https://open.bigmodel.cn/api/anthropic
+  #   - auth: env var ANTHROPIC_AUTH_TOKEN → Authorization: Bearer
+  #
+  # Companion step: this template only carries LLM config. To also deliver
+  # company skills / slash commands / MCPs, run (after profile apply):
+  #   cowork-mdm marketplace add https://github.com/<your-org>/claude-org-plugins
+  # which clones the repo into /Library/Application Support/Claude/org-plugins/
+  # and symlinks each plugin into place. See `mdm-plugins` skill for details.
+
+values:
+  inferenceProvider: gateway
+
+  disableDeploymentModeChooser: true
+
+  inferenceGatewayBaseUrl: https://open.bigmodel.cn/api/anthropic
+
+  # Zhipu's doc sets ANTHROPIC_AUTH_TOKEN, which Claude Code wires as
+  # Authorization: Bearer.
+  inferenceGatewayAuthScheme: bearer
+
+  # Replace with the token from Zhipu's console. Never commit real keys to
+  # this template — keep them in your private overrides YAML instead.
+  inferenceGatewayApiKey: REPLACE_WITH_YOUR_API_KEY
+
+  # Optional: pin a model list. Without this the gateway's /v1/models result
+  # is used. Zhipu's doc examples reference these Anthropic-compatible names.
+  # inferenceModels: >-
+  #   ["glm-5.1","GLM-4.7","GLM-4.5-Air","glm-5-turbo"]
