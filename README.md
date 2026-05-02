@@ -16,8 +16,7 @@ Deploying Claude Desktop in 3rd-party inference mode (Bedrock, Vertex, LLM gatew
 
 ```bash
 # macOS (Homebrew)
-brew tap krislavten/tap
-brew install cowork-mdm
+brew install krislavten/tap/cowork-mdm
 
 # Or download a binary from the Releases page:
 # https://github.com/krislavten/cowork-mdm/releases
