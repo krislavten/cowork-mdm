@@ -7,17 +7,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/krislavten/cowork-mdm/internal/schema"
 )
+
+// DefaultPayloadIdentifierPrefix is the reverse-DNS prefix used when
+// MobileConfigOpts.PayloadIdentifier (and the COWORK_MDM_PAYLOAD_ID_PREFIX
+// env var) are both unset. Enterprises should override this with their
+// own reverse-DNS via --payload-identifier-prefix or the env var.
+const DefaultPayloadIdentifierPrefix = "com.cowork-mdm"
+
+// EnvPayloadIdentifierPrefix is the env-var fallback for the prefix.
+// Precedence: MobileConfigOpts.PayloadIdentifier (full, explicit) >
+// COWORK_MDM_PAYLOAD_ID_PREFIX (prefix only, env) >
+// DefaultPayloadIdentifierPrefix (package default).
+const EnvPayloadIdentifierPrefix = "COWORK_MDM_PAYLOAD_ID_PREFIX"
 
 // MobileConfigOpts controls how a profile is wrapped into an Apple
 // Configuration Profile (.mobileconfig). PayloadUUIDs are randomized unless
 // explicitly set, which is how Apple expects it — UUIDs should change across
 // exports to avoid MDM collisions. Tests supply fixed values.
 type MobileConfigOpts struct {
-	PayloadIdentifier string // default "com.yuanli.cowork-mdm.<slug-of-name>"
+	// PayloadIdentifier is the fully-qualified identifier. If unset,
+	// resolved as "<prefix>.<slug-of-name>" where <prefix> is
+	// PayloadIdentifierPrefix OR the COWORK_MDM_PAYLOAD_ID_PREFIX env
+	// var OR DefaultPayloadIdentifierPrefix.
+	PayloadIdentifier string
+
+	// PayloadIdentifierPrefix sets only the reverse-DNS prefix, letting
+	// EncodeMobileConfig compute <prefix>.<slug-of-name>. Ignored if
+	// PayloadIdentifier is set. Empty string falls through to env +
+	// default.
+	PayloadIdentifierPrefix string
 
 	// PayloadUUID is the inner payload's UUID (the one for the
 	// com.anthropic.claudefordesktop payload entry). This matches the
@@ -33,6 +56,26 @@ type MobileConfigOpts struct {
 	PayloadScope        string // "System" (default) | "User"
 }
 
+// resolvePayloadIdentifier applies the precedence:
+//
+//	opts.PayloadIdentifier (fully explicit)     >
+//	opts.PayloadIdentifierPrefix + "." + slug   >
+//	env COWORK_MDM_PAYLOAD_ID_PREFIX + slug     >
+//	DefaultPayloadIdentifierPrefix + slug
+func resolvePayloadIdentifier(opts MobileConfigOpts, profileName string) string {
+	if opts.PayloadIdentifier != "" {
+		return opts.PayloadIdentifier
+	}
+	prefix := opts.PayloadIdentifierPrefix
+	if prefix == "" {
+		prefix = os.Getenv(EnvPayloadIdentifierPrefix)
+	}
+	if prefix == "" {
+		prefix = DefaultPayloadIdentifierPrefix
+	}
+	return prefix + "." + slugify(profileName)
+}
+
 // EncodeMobileConfig wraps the profile's MDM key/value pairs in the standard
 // Apple Configuration Profile XML structure.
 //
@@ -40,9 +83,7 @@ type MobileConfigOpts struct {
 // jsonString values go inside <string> elements as JSON text, NOT as <array>.
 // Claude.app calls JSON.parse on the string — a native plist array fails.
 func EncodeMobileConfig(p *Profile, opts MobileConfigOpts) ([]byte, error) {
-	if opts.PayloadIdentifier == "" {
-		opts.PayloadIdentifier = "com.yuanli.cowork-mdm." + slugify(p.Name)
-	}
+	opts.PayloadIdentifier = resolvePayloadIdentifier(opts, p.Name)
 	if opts.ConfigurationPayloadUUID == "" {
 		opts.ConfigurationPayloadUUID = randomUUID()
 	}

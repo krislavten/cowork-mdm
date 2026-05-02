@@ -22,7 +22,7 @@
 			<key>inferenceBedrockRegion</key>
 			<string>us-west-2</string>
 			<key>inferenceModels</key>
-			<string>[&quot;arn:aws:bedrock:us-west-2:ACCOUNT:application-inference-profile/OPUS_PROFILE_ID&quot;,&quot;arn:aws:bedrock:us-west-2:ACCOUNT:application-inference-profile/SONNET_PROFILE_ID[1m]&quot;,&quot;arn:aws:bedrock:us-west-2:ACCOUNT:application-inference-profile/HAIKU_PROFILE_ID&quot;]</string>
+			<string>[&quot;arn:aws:bedrock:{{REGION}}:{{ACCOUNT}}:application-inference-profile/{{OPUS_PROFILE_ID}}&quot;,&quot;arn:aws:bedrock:{{REGION}}:{{ACCOUNT}}:application-inference-profile/{{SONNET_PROFILE_ID}}[1m]&quot;,&quot;arn:aws:bedrock:{{REGION}}:{{ACCOUNT}}:application-inference-profile/{{HAIKU_PROFILE_ID}}&quot;]</string>
 			<key>inferenceProvider</key>
 			<string>bedrock</string>
 		</dict>

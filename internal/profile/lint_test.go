@@ -29,16 +29,18 @@ func TestLintPlaceholders_EnterpriseCNDirty(t *testing.T) {
 }
 
 func TestLintPlaceholders_BedrockBasicClean(t *testing.T) {
-	// bedrock-basic uses documented variable slots (ACCOUNT,
-	// OPUS_PROFILE_ID, etc.) that are NOT the REPLACE_* convention.
-	// Lint must not flag them — that's the scope boundary.
+	// bedrock-basic uses {{ACCOUNT}} / {{OPUS_PROFILE_ID}} style
+	// mustache-delimited placeholders that are NOT the REPLACE_*
+	// convention. Lint must not flag them — that's the scope boundary.
+	// The {{…}} delimiters are admin-visible tokens safe for sed /
+	// envsubst substitution; they're documented, not residual.
 	p, err := LoadTemplate("bedrock-basic")
 	if err != nil {
 		t.Fatalf("LoadTemplate: %v", err)
 	}
 	findings := LintPlaceholders(p)
 	if len(findings) != 0 {
-		t.Errorf("bedrock-basic should have zero REPLACE_* findings (its variables use ACCOUNT / PROFILE_ID style), got %d: %v",
+		t.Errorf("bedrock-basic should have zero REPLACE_* findings (its variables use {{ACCOUNT}} / {{PROFILE_ID}} style), got %d: %v",
 			len(findings), findings)
 	}
 }

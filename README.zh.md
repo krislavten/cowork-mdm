@@ -24,11 +24,17 @@ brew install krislavten/tap/cowork-mdm
 # 企业 gateway 部署的标准路径：
 cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
 $EDITOR overrides.yaml                           # 填写 REPLACE_* 占位符
-cowork-mdm profile new --from overrides.yaml --out company.mobileconfig
+cowork-mdm profile new --from overrides.yaml \
+  --payload-identifier-prefix com.acme.it \
+  --out company.mobileconfig
 cowork-mdm profile lint company.mobileconfig    # 下发前占位符体检
 cowork-mdm profile validate company.mobileconfig
 # 接下来通过你公司的 MDM 下发 company.mobileconfig —— 完整步骤见 cookbook。
 ```
+
+Bedrock / Vertex / Foundry 部署同理，把模板名换成 `bedrock-basic` /
+`vertex` / `foundry`，填入 `{{ACCOUNT}}` / region / 模型 ID 占位符即可，
+下游流水线完全一致。
 
 ## 企业部署手册
 

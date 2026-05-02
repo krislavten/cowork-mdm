@@ -24,11 +24,17 @@ brew install krislavten/tap/cowork-mdm
 # Happy path for an enterprise gateway deployment:
 cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
 $EDITOR overrides.yaml                           # fill REPLACE_* placeholders
-cowork-mdm profile new --from overrides.yaml --out company.mobileconfig
+cowork-mdm profile new --from overrides.yaml \
+  --payload-identifier-prefix com.acme.it \
+  --out company.mobileconfig
 cowork-mdm profile lint company.mobileconfig    # pre-distribution gate
 cowork-mdm profile validate company.mobileconfig
 # Then push company.mobileconfig via your MDM — full recipe in the cookbook.
 ```
+
+For Bedrock / Vertex / Foundry deployments, substitute the template name
+— `bedrock-basic`, `vertex`, or `foundry` — and fill `{{ACCOUNT}}` /
+region / model-ID placeholders instead. Same downstream pipeline.
 
 ## Enterprise deployment cookbook
 

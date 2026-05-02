@@ -33,11 +33,12 @@ func newProfileCommand(stdout, stderr io.Writer) *cobra.Command {
 
 func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 	var (
-		template string
-		fromFile string
-		outFile  string
-		format   string
-		setFlags []string
+		template        string
+		fromFile        string
+		outFile         string
+		format          string
+		payloadIdPrefix string
+		setFlags        []string
 	)
 	c := &cobra.Command{
 		Use:   "new",
@@ -45,6 +46,9 @@ func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 		Long: "Loads a built-in template (--template) or a user-supplied YAML file\n" +
 			"(--from), applies any --set KEY=VALUE overrides, and emits the profile\n" +
 			"in the requested --format. Default format is mobileconfig.\n\n" +
+			"Use --payload-identifier-prefix to stamp your org's reverse-DNS onto\n" +
+			"the mobileconfig's PayloadIdentifier. Precedence: flag > env var\n" +
+			"COWORK_MDM_PAYLOAD_ID_PREFIX > default (com.cowork-mdm).\n\n" +
 			"Keep enterprise-specific values (ARNs, MCP tokens) in your own YAML file\n" +
 			"using --from; never commit those to the template directory.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -61,7 +65,7 @@ func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 					return fmt.Errorf("--set %s: %w", set, err)
 				}
 			}
-			data, err := encodeProfile(p, format)
+			data, err := encodeProfile(p, format, payloadIdPrefix)
 			if err != nil {
 				return err
 			}
@@ -80,6 +84,7 @@ func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 	c.Flags().StringVar(&fromFile, "from", "", "path to a YAML file describing the profile")
 	c.Flags().StringVarP(&outFile, "out", "o", "", "output file (default stdout)")
 	c.Flags().StringVarP(&format, "format", "f", "mobileconfig", "output format: mobileconfig | plist")
+	c.Flags().StringVar(&payloadIdPrefix, "payload-identifier-prefix", "", "reverse-DNS prefix for PayloadIdentifier (e.g. com.acme.it). Overrides $COWORK_MDM_PAYLOAD_ID_PREFIX and the default com.cowork-mdm.")
 	c.Flags().StringArrayVar(&setFlags, "set", nil, "override a key: --set KEY=VALUE (repeatable)")
 	return c
 }
@@ -178,12 +183,16 @@ func newProfileApplyCommand(stdout, stderr io.Writer) *cobra.Command {
 // --- profile status ---
 
 func newProfileStatusCommand(stdout, stderr io.Writer) *cobra.Command {
-	var hive string
+	var (
+		hive     string
+		source   string
+		unmasked bool
+	)
 	c := &cobra.Command{
 		Use:   "status",
 		Short: "Show the currently applied managed profile",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			rep, err := managed.Status(managed.StatusOptions{Hive: hive})
+			rep, err := managed.Status(managed.StatusOptions{Hive: hive, SourcePath: source})
 			if err != nil {
 				if errors.Is(err, managed.ErrUnsupportedPlatform) {
 					fmt.Fprintln(stderr, "status: unsupported on this platform")
@@ -244,12 +253,14 @@ func newProfileStatusCommand(stdout, stderr io.Writer) *cobra.Command {
 			fmt.Fprintln(stdout, "\nConfigured values:")
 			for _, k := range rep.Profile.Keys() {
 				v, _ := rep.Profile.Get(k)
-				fmt.Fprintf(stdout, "  %-40s %v\n", k, v)
+				fmt.Fprintf(stdout, "  %-40s %s\n", k, formatStatusValue(k, v, unmasked))
 			}
 			return nil
 		},
 	}
 	c.Flags().StringVar(&hive, "hive", "", "Windows only: HKLM (default) or HKCU")
+	c.Flags().StringVar(&source, "source", "", "read this file instead of the default managed-prefs location (accepts .mobileconfig or .plist)")
+	c.Flags().BoolVar(&unmasked, "unmasked", false, "show raw sensitive values in human-readable output (default: redact)")
 	return c
 }
 
@@ -424,10 +435,12 @@ func setFromString(p *profile.Profile, key, raw string) error {
 // to avoid widening the cli package's surface; they live in a separate
 // helpers file.
 
-func encodeProfile(p *profile.Profile, format string) ([]byte, error) {
+func encodeProfile(p *profile.Profile, format, payloadIdPrefix string) ([]byte, error) {
 	switch strings.ToLower(format) {
 	case "", "mobileconfig":
-		return profile.EncodeMobileConfig(p, profile.MobileConfigOpts{})
+		return profile.EncodeMobileConfig(p, profile.MobileConfigOpts{
+			PayloadIdentifierPrefix: payloadIdPrefix,
+		})
 	case "plist":
 		return profile.EncodePlist(p)
 	default:

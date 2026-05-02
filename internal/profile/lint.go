@@ -76,7 +76,7 @@ func scanValue(v any) []string {
 // for printing to stdout from the CLI.
 func FormatFindings(findings []PlaceholderFinding) string {
 	if len(findings) == 0 {
-		return "no placeholder residuals"
+		return "no placeholder residuals\n"
 	}
 	out := fmt.Sprintf("%d placeholder(s) found — fill in before distributing:\n", len(findings))
 	for _, f := range findings {

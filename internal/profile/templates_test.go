@@ -61,8 +61,8 @@ func TestLoadTemplate_BedrockBasic(t *testing.T) {
 		t.Fatalf("inferenceModels should be []string after template load, got %T: %v", v, v)
 	}
 	joined := strings.Join(arr, " ")
-	if !strings.Contains(joined, "ACCOUNT") {
-		t.Errorf("inferenceModels should contain ACCOUNT placeholder, got %v", arr)
+	if !strings.Contains(joined, "{{ACCOUNT}}") {
+		t.Errorf("inferenceModels should contain {{ACCOUNT}} placeholder, got %v", arr)
 	}
 }
 

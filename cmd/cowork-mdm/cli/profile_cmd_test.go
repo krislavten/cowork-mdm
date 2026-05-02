@@ -136,6 +136,170 @@ func TestProfileValidate_FlagsGarbage(t *testing.T) {
 	}
 }
 
+func TestProfileStatus_RedactsSensitiveByDefault(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("status SourcePath darwin-only for this test, got %s", runtime.GOOS)
+	}
+	// Build a fixture profile with a known-sensitive key populated.
+	dir := t.TempDir()
+	yaml := `name: fixture
+values:
+  inferenceProvider: gateway
+  inferenceGatewayBaseUrl: https://gw.example.internal
+  inferenceGatewayApiKey: super-secret-token-must-not-leak
+`
+	yamlPath := filepath.Join(dir, "fixture.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	profilePath := filepath.Join(dir, "fixture.plist")
+	if _, _, err := runCmd(t, "profile", "new", "--from", yamlPath, "--format", "plist", "--out", profilePath); err != nil {
+		t.Fatal(err)
+	}
+
+	// Default: sensitive values must be redacted in human output.
+	out, _, err := runCmd(t, "profile", "status", "--source", profilePath)
+	if err != nil {
+		t.Fatalf("status: %v", err)
+	}
+	if strings.Contains(out, "super-secret-token-must-not-leak") {
+		t.Errorf("sensitive value leaked in default output:\n%s", out)
+	}
+	if !strings.Contains(out, "<redacted>") {
+		t.Errorf("expected <redacted> marker in output:\n%s", out)
+	}
+	// Non-sensitive key should pass through.
+	if !strings.Contains(out, "gw.example.internal") {
+		t.Errorf("non-sensitive value was unexpectedly redacted")
+	}
+}
+
+func TestProfileStatus_UnmaskedFlag(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("status SourcePath darwin-only for this test, got %s", runtime.GOOS)
+	}
+	dir := t.TempDir()
+	yaml := `name: fixture
+values:
+  inferenceProvider: gateway
+  inferenceGatewayBaseUrl: https://gw.example.internal
+  inferenceGatewayApiKey: super-secret-token
+`
+	yamlPath := filepath.Join(dir, "fixture.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	profilePath := filepath.Join(dir, "fixture.plist")
+	if _, _, err := runCmd(t, "profile", "new", "--from", yamlPath, "--format", "plist", "--out", profilePath); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := runCmd(t, "profile", "status", "--source", profilePath, "--unmasked")
+	if err != nil {
+		t.Fatalf("status --unmasked: %v", err)
+	}
+	if !strings.Contains(out, "super-secret-token") {
+		t.Errorf("expected --unmasked to show raw value, output=%s", out)
+	}
+}
+
+func TestProfileStatus_JSONKeepsRawValues(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("status SourcePath darwin-only for this test, got %s", runtime.GOOS)
+	}
+	dir := t.TempDir()
+	yaml := `name: fixture
+values:
+  inferenceProvider: gateway
+  inferenceGatewayApiKey: super-secret-token
+`
+	yamlPath := filepath.Join(dir, "fixture.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	profilePath := filepath.Join(dir, "fixture.plist")
+	if _, _, err := runCmd(t, "profile", "new", "--from", yamlPath, "--format", "plist", "--out", profilePath); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := runCmd(t, "profile", "status", "--source", profilePath, "--json")
+	if err != nil {
+		t.Fatalf("status --json: %v", err)
+	}
+	if !strings.Contains(out, "super-secret-token") {
+		t.Errorf("JSON mode should return raw values for machine consumers; got %s", out)
+	}
+}
+
+func TestProfileStatus_SourceMobileconfig(t *testing.T) {
+	// Regression guard: --source should auto-detect .mobileconfig wrapper
+	// and decode the inner Claude payload, not leak outer PayloadContent.
+	if runtime.GOOS != "darwin" {
+		t.Skipf("status SourcePath darwin-only for this test, got %s", runtime.GOOS)
+	}
+	dir := t.TempDir()
+	yaml := `name: fixture
+values:
+  inferenceProvider: gateway
+  inferenceGatewayBaseUrl: https://gw.example.internal
+  inferenceGatewayApiKey: super-secret-token
+`
+	yamlPath := filepath.Join(dir, "fixture.yaml")
+	if err := os.WriteFile(yamlPath, []byte(yaml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	profilePath := filepath.Join(dir, "fixture.mobileconfig")
+	if _, _, err := runCmd(t, "profile", "new", "--from", yamlPath, "--out", profilePath); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := runCmd(t, "profile", "status", "--source", profilePath)
+	if err != nil {
+		t.Fatalf("status --source mobileconfig: %v", err)
+	}
+	// Must surface the inner Claude payload, not the outer envelope keys.
+	if !strings.Contains(out, "inferenceProvider") {
+		t.Errorf("status should decode inner Claude payload; got %s", out)
+	}
+	if strings.Contains(out, "PayloadContent") {
+		t.Errorf("status leaked mobileconfig outer-wrapper keys; got %s", out)
+	}
+	// Sensitive value still redacted.
+	if strings.Contains(out, "super-secret-token") {
+		t.Errorf("sensitive value leaked: %s", out)
+	}
+}
+
+func TestProfileNew_PayloadIdentifierPrefix(t *testing.T) {
+	// Explicit flag wins over env var and default.
+	t.Setenv("COWORK_MDM_PAYLOAD_ID_PREFIX", "com.env.example")
+	out, _, err := runCmd(t, "profile", "new",
+		"--template", "bedrock-basic",
+		"--payload-identifier-prefix", "com.acme.it",
+	)
+	if err != nil {
+		t.Fatalf("profile new: %v", err)
+	}
+	if !strings.Contains(out, "com.acme.it.bedrock-basic") {
+		t.Errorf("flag-provided prefix not in output")
+	}
+	if strings.Contains(out, "com.env.example") {
+		t.Errorf("env var should have been overridden by flag")
+	}
+	if strings.Contains(out, "com.yuanli") {
+		t.Errorf("legacy com.yuanli prefix leaked into output")
+	}
+}
+
+func TestProfileNew_PayloadIdentifierEnvFallback(t *testing.T) {
+	// No flag → env var takes effect.
+	t.Setenv("COWORK_MDM_PAYLOAD_ID_PREFIX", "com.env.example")
+	out, _, err := runCmd(t, "profile", "new", "--template", "bedrock-basic")
+	if err != nil {
+		t.Fatalf("profile new: %v", err)
+	}
+	if !strings.Contains(out, "com.env.example.bedrock-basic") {
+		t.Errorf("env-var prefix not in output")
+	}
+}
+
 func TestProfileShowTemplate_Stdout(t *testing.T) {
 	out, _, err := runCmd(t, "profile", "show-template", "enterprise-cn-full")
 	if err != nil {

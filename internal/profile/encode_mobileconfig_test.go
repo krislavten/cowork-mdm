@@ -7,6 +7,82 @@ import (
 	"testing"
 )
 
+func TestPayloadIdentifier_Precedence(t *testing.T) {
+	p, err := LoadTemplate("bedrock-basic")
+	if err != nil {
+		t.Fatalf("LoadTemplate: %v", err)
+	}
+
+	t.Run("default prefix when nothing set", func(t *testing.T) {
+		t.Setenv(EnvPayloadIdentifierPrefix, "")
+		out, err := EncodeMobileConfig(p, MobileConfigOpts{})
+		if err != nil {
+			t.Fatalf("encode: %v", err)
+		}
+		want := DefaultPayloadIdentifierPrefix + "." + slugify(p.Name)
+		if !strings.Contains(string(out), want) {
+			t.Errorf("default PayloadIdentifier %q not in output", want)
+		}
+	})
+
+	t.Run("env var overrides default", func(t *testing.T) {
+		t.Setenv(EnvPayloadIdentifierPrefix, "com.env.acme")
+		out, err := EncodeMobileConfig(p, MobileConfigOpts{})
+		if err != nil {
+			t.Fatalf("encode: %v", err)
+		}
+		want := "com.env.acme." + slugify(p.Name)
+		if !strings.Contains(string(out), want) {
+			t.Errorf("env-var PayloadIdentifier %q not in output", want)
+		}
+	})
+
+	t.Run("opts prefix overrides env var", func(t *testing.T) {
+		t.Setenv(EnvPayloadIdentifierPrefix, "com.env.acme")
+		out, err := EncodeMobileConfig(p, MobileConfigOpts{
+			PayloadIdentifierPrefix: "com.flag.beta",
+		})
+		if err != nil {
+			t.Fatalf("encode: %v", err)
+		}
+		want := "com.flag.beta." + slugify(p.Name)
+		if !strings.Contains(string(out), want) {
+			t.Errorf("opts PayloadIdentifierPrefix %q not in output", want)
+		}
+		if strings.Contains(string(out), "com.env.acme") {
+			t.Errorf("opts prefix should have overridden env var but env still present")
+		}
+	})
+
+	t.Run("full identifier wins over prefix sources", func(t *testing.T) {
+		t.Setenv(EnvPayloadIdentifierPrefix, "com.env.acme")
+		out, err := EncodeMobileConfig(p, MobileConfigOpts{
+			PayloadIdentifier:       "com.explicit.full.id",
+			PayloadIdentifierPrefix: "com.flag.beta",
+		})
+		if err != nil {
+			t.Fatalf("encode: %v", err)
+		}
+		if !strings.Contains(string(out), "com.explicit.full.id") {
+			t.Errorf("explicit PayloadIdentifier not in output")
+		}
+		if strings.Contains(string(out), "com.flag.beta") || strings.Contains(string(out), "com.env.acme") {
+			t.Errorf("explicit identifier should be sole value; prefix/env leaked through")
+		}
+	})
+
+	t.Run("no legacy com.yuanli in default output", func(t *testing.T) {
+		t.Setenv(EnvPayloadIdentifierPrefix, "")
+		out, err := EncodeMobileConfig(p, MobileConfigOpts{})
+		if err != nil {
+			t.Fatalf("encode: %v", err)
+		}
+		if strings.Contains(string(out), "com.yuanli") {
+			t.Errorf("output still contains legacy 'com.yuanli' prefix — default should now be %q", DefaultPayloadIdentifierPrefix)
+		}
+	})
+}
+
 // buildBedrockProfile returns a profile resembling the handcrafted plists
 // we used to write for real-world deployments — provider + region + profile
 // + aws dir + model list + a minimal MCP server with tool policy.
