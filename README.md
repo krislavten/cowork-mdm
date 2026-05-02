@@ -1,6 +1,8 @@
 # cowork-mdm
 
-> Deploy Claude Desktop across enterprise fleets — MDM profiles for Bedrock / Vertex / Foundry / Chinese LLM gateways, org-plugin distribution, per-host diagnostics.
+**English** · [中文](README.zh.md)
+
+> Deploy Claude Desktop across enterprise fleets — MDM profiles for Bedrock / Vertex / Foundry / third-party and self-hosted LLM gateways, org-plugin distribution, per-host diagnostics.
 
 **Status**: **v0.3 — CLI + Claude Code plugin.** The CLI generates MDM profiles (`.mobileconfig` / plist), manages the org plugin marketplace, and diagnoses broken hosts. A Claude Code plugin layer (skills + slash commands) makes the CLI self-driving inside an agent. Both ship together.
 
@@ -8,7 +10,7 @@
 
 ## Why cowork-mdm
 
-**Claude Desktop supports third-party Anthropic-compatible LLM providers.** For Chinese enterprises, that now includes **DeepSeek / GLM / MiniMax** out of the box — the first time Claude Desktop workflows are deployable in regions where `api.anthropic.com` isn't the answer. For global orgs, the same mechanism covers AWS Bedrock, Google Vertex, Azure AI Foundry, and any self-hosted OpenAI-compatible gateway.
+**Claude Desktop supports third-party Anthropic-compatible LLM providers.** Enterprises pick providers based on cost, data residency, compliance, and model preference — and Claude Desktop accepts all of them through `inferenceProvider=gateway` or dedicated Bedrock / Vertex / Foundry keys. That covers hyperscaler routes (AWS Bedrock, Google Vertex, Azure AI Foundry), self-hosted vLLM / SGLang behind an Anthropic-compatible shim, and third-party gateway services (DeepSeek, Zhipu GLM, MiniMax, Mistral's API, and similar). `cowork-mdm` lets IT deploy whichever choice at fleet scale.
 
 **But the deployment config is non-trivial.** Gateway URL + auth scheme + managed MCP servers + egress allowlist + auto-update policy + telemetry policy + sandbox constraints — Claude Desktop reads 51 managed-preferences keys, of which Anthropic's public enterprise documentation covers only 8. End users can't self-serve this; IT has to push it at fleet scale via Jamf / Microsoft Intune / Kandji. `cowork-mdm` surfaces the full schema (extracted from the app's embedded zod schema, currently pinned to Claude.app 1.5354.0), generates correct MDM profiles, and runs per-host diagnostics so IT doesn't have to reverse-engineer the Electron bundle.
 
@@ -19,7 +21,7 @@
 ```bash
 brew install krislavten/tap/cowork-mdm
 
-# Happy path for a CN enterprise onboarding:
+# Happy path for an enterprise gateway deployment:
 cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
 $EDITOR overrides.yaml                           # fill REPLACE_* placeholders
 cowork-mdm profile new --from overrides.yaml --out company.mobileconfig
@@ -30,11 +32,11 @@ cowork-mdm profile validate company.mobileconfig
 
 ## Enterprise deployment cookbook
 
-**See [docs/deployment-cn.md](docs/deployment-cn.md)** — 8-section end-to-end recipe:
+**See [docs/deployment-cn.md](docs/deployment-cn.md)** — 8-section end-to-end recipe for gateway-mode deployments:
 
-1. Prerequisites 2. Pick an LLM provider (DeepSeek / GLM / MiniMax) 3. Generate the profile 4. Validate & lint 5. Distribute via Jamf / Intune / Kandji (with Script payload for plugins) 6. Verify on an employee machine 7. Common failure modes 8. Updating later.
+1. Prerequisites 2. Pick an LLM provider 3. Generate the profile 4. Validate & lint 5. Distribute via Jamf / Intune / Kandji (with Script payload for plugins) 6. Verify on an employee machine 7. Common failure modes 8. Updating later.
 
-For global deployments using Bedrock / Vertex / Foundry, the same CLI surface applies — start from [`specs/profile.md`](specs/profile.md) and use the `bedrock-basic` / `vertex` / `foundry` built-in templates.
+For Bedrock / Vertex / Foundry deployments the same CLI surface applies — start from [`specs/profile.md`](specs/profile.md) and use the `bedrock-basic` / `vertex` / `foundry` built-in templates.
 
 ## Command reference
 
