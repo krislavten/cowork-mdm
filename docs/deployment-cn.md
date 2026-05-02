@@ -1,9 +1,16 @@
-# Claude Desktop enterprise deployment — Chinese LLM providers
+# Claude Desktop enterprise deployment — gateway-mode cookbook
 
 End-to-end recipe for taking Claude Desktop from "fresh Mac" to "employee
-logged in, talking to the company-approved Chinese LLM with company MCP
-servers and company skills/commands". Target audience: enterprise IT /
-ops running Jamf Pro, Microsoft Intune, or Kandji for macOS fleets.
+logged in, talking to the company-approved LLM provider with company MCP
+servers and company skills / slash commands". Target audience: enterprise
+IT / ops running Jamf Pro, Microsoft Intune, or Kandji for macOS fleets.
+
+Covers the `inferenceProvider=gateway` path: third-party Anthropic-
+compatible services (DeepSeek, Zhipu GLM, MiniMax, Mistral, …) and
+self-hosted vLLM / SGLang behind an Anthropic-compatible shim. For
+Bedrock / Vertex / Foundry deployments use the `bedrock-basic` /
+`vertex` / `foundry` built-in templates instead; the distribution
+mechanics (Sections 5–8) are identical.
 
 Scope: macOS. Windows is not yet supported end-to-end (tracked in
 [issue #9](https://github.com/krislavten/cowork-mdm/issues/9)).
@@ -20,8 +27,9 @@ Scope: macOS. Windows is not yet supported end-to-end (tracked in
 
 Before starting, gather:
 
-- **Vendor API key.** Created on the vendor's platform console (DeepSeek,
-  Zhipu GLM, or MiniMax). You'll inject this via your MDM's secret-variable
+- **Vendor API key.** Created on the provider's platform console (e.g.
+  DeepSeek, Zhipu GLM, MiniMax, Mistral, or your self-hosted gateway's
+  admin console). You'll inject this via your MDM's secret-variable
   mechanism, not by hand-pasting into a YAML file.
 - **Admin access to your MDM system** (Jamf Pro / Intune / Kandji) —
   specifically the permission to push a Custom Settings Payload + a
@@ -44,9 +52,10 @@ Before starting, gather:
 
 ## 2. Pick your LLM provider
 
-Pre-baked templates cover the three domestic providers with Anthropic-
+Pre-baked templates cover several gateway providers with Anthropic-
 compatible endpoints. Pick one and note its values — you'll use them in
-Section 3.
+Section 3. If your provider isn't listed, start from the generic
+`gateway` template and supply the base URL + auth scheme yourself.
 
 | Vendor      | Template (if using one)    | `inferenceGatewayBaseUrl`                 | `inferenceGatewayAuthScheme` |
 | ----------- | -------------------------- | ----------------------------------------- | ---------------------------- |
@@ -155,7 +164,7 @@ cowork-mdm profile lint company.mobileconfig
 ```
 
 `profile lint` is narrow by design — it only flags the reserved
-`REPLACE_*` convention used by the CN-focused templates. It is NOT a
+`REPLACE_*` convention used by the gateway-mode enterprise templates. It is NOT a
 general config smell checker; older template variables like `ACCOUNT`
 or `PROFILE_ID` in `bedrock-basic` are intentional slots and NOT
 flagged.
