@@ -505,7 +505,7 @@ func TestPack_AtomicOnSkillCopyFailure(t *testing.T) {
 // TestPack_ForceHandlesBrokenSymlinkOutDir covers the round-2 MUST-FIX:
 // a dangling symlink at outDir used to make resolveOutCanonical fail
 // before the Force-aware policy could run. Now a broken symlink is
-// treated as non-canonicalisable, and Force replaces it.
+// treated as non-canonicalizable, and Force replaces it.
 func TestPack_ForceHandlesBrokenSymlinkOutDir(t *testing.T) {
 	in := t.TempDir()
 	writeSkill(t, in, "s", "s", "s", nil)
@@ -533,7 +533,7 @@ func TestPack_ForceHandlesBrokenSymlinkOutDir(t *testing.T) {
 
 // TestPack_RefusesBrokenSymlinkOutDirWithoutForce: the mirror case. A
 // broken symlink at outDir without --force must error via policy, not
-// via a canonicalisation failure.
+// via a canonicalization failure.
 func TestPack_RefusesBrokenSymlinkOutDirWithoutForce(t *testing.T) {
 	in := t.TempDir()
 	writeSkill(t, in, "s", "s", "s", nil)

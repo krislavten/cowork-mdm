@@ -411,7 +411,7 @@ func resolveOutCanonical(abs string) (string, error) {
 		// Walk up until we find an entry we can resolve. An entry that
 		// exists (Lstat) but whose EvalSymlinks fails (broken symlink,
 		// permission denied on the target) is treated as "not usable for
-		// canonicalisation" — we append it to the tail and try the parent.
+		// canonicalization" — we append it to the tail and try the parent.
 		if info, err := os.Lstat(prefix); err == nil {
 			if info.Mode()&os.ModeSymlink == 0 {
 				// Real file/dir — EvalSymlinks will succeed.
@@ -456,7 +456,7 @@ func isSameOrInside(a, b string) bool {
 //
 // Returns (policy, err). policy describes how commitBundle should
 // handle the destination — see outDirPolicy docs. Threading this bit
-// through the Pack body keeps a racer from hijacking commit behaviour
+// through the Pack body keeps a racer from hijacking commit behavior
 // after the initial check.
 type outDirPolicy int
 
