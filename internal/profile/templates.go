@@ -37,6 +37,21 @@ func LoadTemplate(name string) (*Profile, error) {
 	return instantiate(data)
 }
 
+// ReadTemplateSource returns the raw YAML bytes of the named built-in
+// template. Intended for the `profile show-template` subcommand to dump
+// the template so admins can copy + edit it as a starting point for
+// their own overrides YAML. An unknown name returns an error listing
+// the available templates.
+func ReadTemplateSource(name string) ([]byte, error) {
+	fname := path.Join("templates", name+".yaml")
+	b, err := fs.ReadFile(templateFS, fname)
+	if err != nil {
+		avail := strings.Join(TemplateNames(), ", ")
+		return nil, fmt.Errorf("template %q not found (available: %s)", name, avail)
+	}
+	return b, nil
+}
+
 // LoadTemplateFile is the same but from a caller-supplied filesystem path.
 // Used by `profile new --from path/to/my-profile.yaml` to keep enterprise-
 // specific configs (with ARNs, tokens, etc.) outside the binary.

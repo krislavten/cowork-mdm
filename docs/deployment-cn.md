@@ -80,22 +80,15 @@ machines.
 ### 3b. Production path — copy, fill, `--from`
 
 The CLI's `profile new` emits `mobileconfig` or `plist` only (see
-`profile new --format`), not YAML. To get an editable YAML starting
-point, copy the template source from the installed CLI's release
-bundle — the version pinned to the CLI you have locally:
+`profile new --format`), not YAML. Use `profile show-template` to dump
+the YAML source of any built-in template as a starting point for your
+org's overrides file:
 
 ```bash
-# `cowork-mdm --version` prints e.g. `cowork-mdm version 0.3.0 (commit …, built …)`.
-# Extract the 3rd token as the semver tag.
-VERSION=$(cowork-mdm --version | awk '{print $3}')
-curl -L -o overrides.yaml \
-  "https://raw.githubusercontent.com/krislavten/cowork-mdm/v${VERSION}/internal/profile/templates/enterprise-cn-full.yaml"
-```
+# Dump the enterprise scaffold YAML to your private config repo
+# (NOT cowork-mdm's repo).
+cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
 
-Pinning to `v${VERSION}` (not `main`) keeps the YAML in lock-step with
-the CLI; `main` can diverge between releases and break `profile new`.
-
-```bash
 # 1. Replace every REPLACE_* placeholder in overrides.yaml with your
 #    real values: gateway base URL + auth scheme + API key, model IDs,
 #    MCP server list, egress allowlist, and any optional sandbox flags
@@ -106,9 +99,8 @@ cowork-mdm profile new --from overrides.yaml --out company.mobileconfig
 ```
 
 `--template` and `--from` are mutually exclusive on a single
-invocation — pick one. (Follow-up issue for a `profile show-template
-<name>` dump-source subcommand tracked at time of writing — until
-it ships, `curl` is the supported path.)
+invocation — pick one. The YAML dumped by `show-template` always
+matches the CLI's own embedded copy, so there's no version drift.
 
 ### 3c. Inject the API key via MDM, not YAML
 
@@ -148,14 +140,25 @@ parseable. It does NOT check:
 - Whether MCP servers are reachable from employee machines.
 - Whether the profile is signed (required by some MDMs — see Section 5).
 
-Add a placeholder check to your pre-distribution pipeline:
+Run `profile lint` as a pre-distribution gate — it scans every value
+in the generated profile for leftover `REPLACE_*` placeholder tokens
+and exits non-zero on any finding:
 
 ```bash
-if grep -q "REPLACE_" company.mobileconfig; then
-  echo "ERROR: unfilled placeholders in profile — do not distribute"
-  exit 1
-fi
+cowork-mdm profile lint company.mobileconfig
+# Expected on a ready-to-ship profile:
+#   company.mobileconfig: no placeholder residuals
+# Expected on a scaffold with unfilled values (exit 1):
+#   company.mobileconfig: N placeholder(s) found — fill in before distributing:
+#     inferenceGatewayApiKey: REPLACE_WITH_YOUR_API_KEY
+#     ...
 ```
+
+`profile lint` is narrow by design — it only flags the reserved
+`REPLACE_*` convention used by the CN-focused templates. It is NOT a
+general config smell checker; older template variables like `ACCOUNT`
+or `PROFILE_ID` in `bedrock-basic` are intentional slots and NOT
+flagged.
 
 ## 5. Distribute via MDM
 
@@ -293,19 +296,20 @@ if not s.get("present"):
 print(f"OK: profile present at {s[\"targetPath\"]}")
 '
 
-# 2. No REPLACE_ placeholders leaked into production.
+# 2. No REPLACE_ placeholders leaked into the deployed plist.
 #    Claude Desktop's managed plist lives at one of these two paths
-#    (host-wide or per-user); check both.
+#    (host-wide or per-user); lint whichever is present. Preserves the
+#    failure signal so the readiness check as a whole exits non-zero if
+#    any plist is dirty.
 USER_PLIST="/Library/Managed Preferences/$USER/com.anthropic.claudefordesktop.plist"
 HOST_PLIST="/Library/Managed Preferences/com.anthropic.claudefordesktop.plist"
-LEAKED=0
+LINT_FAIL=0
 for f in "$USER_PLIST" "$HOST_PLIST"; do
-  if [ -f "$f" ] && /usr/bin/plutil -convert xml1 -o - "$f" 2>/dev/null | /usr/bin/grep -q "REPLACE_"; then
-    echo "FAIL: placeholder in $f"
-    LEAKED=1
+  if [ -f "$f" ] && ! cowork-mdm profile lint "$f"; then
+    LINT_FAIL=1
   fi
 done
-[ "$LEAKED" -eq 0 ] && echo "OK: no placeholders in deployed plist"
+[ "$LINT_FAIL" -ne 0 ] && { echo "FAIL: placeholder residuals in deployed plist" >&2; exit 1; }
 
 # 3. Plugins landed in org-plugins/.
 #    Expected: non-empty output. Empty = Script payload (5a/b/c) didn't
@@ -319,9 +323,6 @@ cowork-mdm doctor
 
 If all four return clean, the deployment is working. Roll to the rest
 of the fleet.
-
-`plutil -convert xml1 -o -` handles both XML and binary plist formats;
-`PlistBuddy -c Print` works too but omits raw values in some cases.
 
 ## 7. Common failure modes
 
