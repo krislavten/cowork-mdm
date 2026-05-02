@@ -7,6 +7,7 @@
 //	cowork-mdm profile templates / new / validate / apply / status
 //	cowork-mdm marketplace add / list / update / remove / link
 //	cowork-mdm plugin list / show / unlink / prune
+//	cowork-mdm skill pack
 //	cowork-mdm doctor [--fix] [--json]
 //	cowork-mdm --version
 package cli
@@ -63,6 +64,7 @@ func NewRootCommand(info BuildInfo, stdout, stderr io.Writer) *cobra.Command {
 	root.AddCommand(newProfileCommand(stdout, stderr))
 	root.AddCommand(newMarketplaceCommand(stdout, stderr))
 	root.AddCommand(newPluginCommand(stdout, stderr))
+	root.AddCommand(newSkillCommand(stdout, stderr))
 	root.AddCommand(newDoctorCommand(stdout, stderr))
 
 	return root
