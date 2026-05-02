@@ -37,7 +37,7 @@ func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 		fromFile        string
 		outFile         string
 		format          string
-		payloadIdPrefix string
+		payloadIDPrefix string
 		setFlags        []string
 	)
 	c := &cobra.Command{
@@ -65,7 +65,7 @@ func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 					return fmt.Errorf("--set %s: %w", set, err)
 				}
 			}
-			data, err := encodeProfile(p, format, payloadIdPrefix)
+			data, err := encodeProfile(p, format, payloadIDPrefix)
 			if err != nil {
 				return err
 			}
@@ -84,7 +84,7 @@ func newProfileNewCommand(stdout, stderr io.Writer) *cobra.Command {
 	c.Flags().StringVar(&fromFile, "from", "", "path to a YAML file describing the profile")
 	c.Flags().StringVarP(&outFile, "out", "o", "", "output file (default stdout)")
 	c.Flags().StringVarP(&format, "format", "f", "mobileconfig", "output format: mobileconfig | plist")
-	c.Flags().StringVar(&payloadIdPrefix, "payload-identifier-prefix", "", "reverse-DNS prefix for PayloadIdentifier (e.g. com.acme.it). Overrides $COWORK_MDM_PAYLOAD_ID_PREFIX and the default com.cowork-mdm.")
+	c.Flags().StringVar(&payloadIDPrefix, "payload-identifier-prefix", "", "reverse-DNS prefix for PayloadIdentifier (e.g. com.acme.it). Overrides $COWORK_MDM_PAYLOAD_ID_PREFIX and the default com.cowork-mdm.")
 	c.Flags().StringArrayVar(&setFlags, "set", nil, "override a key: --set KEY=VALUE (repeatable)")
 	return c
 }
@@ -435,11 +435,11 @@ func setFromString(p *profile.Profile, key, raw string) error {
 // to avoid widening the cli package's surface; they live in a separate
 // helpers file.
 
-func encodeProfile(p *profile.Profile, format, payloadIdPrefix string) ([]byte, error) {
+func encodeProfile(p *profile.Profile, format, payloadIDPrefix string) ([]byte, error) {
 	switch strings.ToLower(format) {
 	case "", "mobileconfig":
 		return profile.EncodeMobileConfig(p, profile.MobileConfigOpts{
-			PayloadIdentifierPrefix: payloadIdPrefix,
+			PayloadIdentifierPrefix: payloadIDPrefix,
 		})
 	case "plist":
 		return profile.EncodePlist(p)
