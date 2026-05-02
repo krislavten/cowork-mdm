@@ -154,10 +154,13 @@ flags; the command body calls out to CLI subcommands.
 ### `/cowork-mdm:new-profile`
 
 Interactive: ask the user which inference provider (Bedrock / Vertex / Azure /
-Gateway / MCP-only), fetch the matching template, prompt for the
-enterprise-specific values, emit a `overrides.yaml`, then run
-`cowork-mdm profile new --template X --from overrides.yaml --out out.mobileconfig`,
-and finally `profile validate` the output.
+Gateway / MCP-only), use the matching built-in template as a structural
+reference, prompt the user for enterprise-specific values, author an
+`overrides.yaml` in that shape, then run `cowork-mdm profile new
+--from overrides.yaml --out out.mobileconfig` — without `--template`, since
+the two flags are mutually exclusive. Finally run `profile validate` on
+the output. Format conversions go through `profile new --format`; there
+is no `profile export` subcommand.
 
 ### `/cowork-mdm:deploy PATH`
 

@@ -70,6 +70,53 @@ All commands that mutate `org-plugins/` require write access to
 `/Library/Application Support/Claude/` — in practice, `sudo`. The plugin
 never `sudo`s for you.
 
+### `marketplace list --json` and `plugin list --json` field schemas
+
+Both commands emit PascalCase fields — parse with exact casing.
+
+`marketplace list --json` returns an array of:
+
+```
+{
+  "Name":       string,       // basename of clone (e.g. "claude-plugins-official")
+  "URL":        string,       // git remote URL
+  "Path":       string,       // absolute clone path under org-plugins/
+  "Plugins":    [string, ...],// plugin names discovered inside this marketplace
+  "CurrentRef": string,       // short SHA of HEAD — this is the "HEAD" column in human output
+  "LastPull":   string        // RFC3339 timestamp; "0001-01-01T00:00:00Z" == never pulled (fresh clone)
+}
+```
+
+The human table's `HEAD` / `PLUGINS` / `LAST-PULL` columns correspond to
+the JSON fields `CurrentRef` / `len(Plugins)` / `LastPull`. The field
+names differ — don't jq on the human column names.
+
+`plugin list --json` returns an array of:
+
+```
+{
+  "Name":       string,       // top-level entry name
+  "Source":     string,       // see "Source values" below
+  "TargetPath": string,       // what the symlink points at (or the real dir path)
+  "IsSymlink":  bool,
+  "Dangling":   bool,
+  "Manifest":   {"name","version","description","author"} | null
+}
+```
+
+**Source values** (enum):
+- `marketplace:<name>` — top-level symlink pointing into a managed
+  marketplace's `plugins/` or `external_plugins/` subdir. This is the
+  normal case.
+- `local-directory` — a real directory at the top level of `org-plugins/`.
+  **This includes the marketplace clone directories themselves.** That is,
+  `plugin list` will show `claude-plugins-official` and `rush-plugin` as
+  entries in addition to the symlinks under them. Expect `len(plugin list)
+  == len(marketplace list) + total symlinks`. Claude Desktop treats these
+  "container" entries as no-op plugins (no manifest), so it's not a bug,
+  but when you report "plugin count" to a user, subtract the marketplace
+  count.
+
 ## Canonical workflow: install the official marketplace
 
 ```bash
@@ -105,9 +152,8 @@ cowork-mdm marketplace add https://github.com/example/claude-plugins
 cowork-mdm plugin list --json | jq '.[] | select(.Source | contains("example"))'
 ```
 
-`plugin list --json` uses PascalCase fields: `Name`, `Source` (e.g.
-`marketplace:claude-plugins-official`), `TargetPath`, `IsSymlink`,
-`Dangling`, `Manifest`. Parse with those exact keys.
+See the field-schema block above for the full shape of both `--json`
+endpoints.
 
 No per-plugin install step exists — adding a marketplace auto-links every
 plugin inside it. If you want to un-expose one plugin, `plugin unlink NAME`

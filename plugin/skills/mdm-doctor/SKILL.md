@@ -47,6 +47,10 @@ Key fields to parse:
   `orgplugins.dangling`, `marketplace.repos-operable`, `user.sessions`,
   `git.available`).
 - `results[].status` — one of `ok` / `warning` / `error` / `skipped`.
+- `results[].message` — short human string; **may be absent** on `ok` or
+  `skipped` results (omitempty). Guard your access.
+- `results[].detail` — optional longer explanation; **omitempty**, often
+  absent. Only read it after checking existence.
 - `results[].fixAvailable` — boolean; `--fix` only attempts to repair
   checks where this is true.
 - `summary` — counts by status. Fast path: if `summary.ok == summary.total`
@@ -152,6 +156,15 @@ Returns the exact paths `cowork-mdm` is consulting. The JSON uses
 **PascalCase** field names — `ClaudeAppPath`, `ManagedPrefsPlist`,
 `ManagedPrefsUserPlist(<you>)`, `OrgPluginsDir`, `UserSessionsDir`,
 `LaunchAgentDir`, `WindowsRegistryPath`. Parse with those exact keys.
+
+**Watch out**: the key `ManagedPrefsUserPlist(<you>)` contains a literal
+`<you>` placeholder — the CLI does not substitute the username into the
+key name itself (only into the value). Don't regex-rewrite the key; read
+it verbatim. Example jq:
+
+```bash
+cowork-mdm paths show --json | jq '.["ManagedPrefsUserPlist(<you>)"]'
+```
 
 If the user has customized any of these (e.g. Parallels/VDI installs where
 `/Library/Application Support/Claude/` is bind-mounted elsewhere), the
