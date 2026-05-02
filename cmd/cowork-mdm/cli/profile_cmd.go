@@ -21,9 +21,11 @@ func newProfileCommand(stdout, stderr io.Writer) *cobra.Command {
 	}
 	cmd.AddCommand(newProfileNewCommand(stdout, stderr))
 	cmd.AddCommand(newProfileValidateCommand(stdout, stderr))
+	cmd.AddCommand(newProfileLintCommand(stdout, stderr))
 	cmd.AddCommand(newProfileApplyCommand(stdout, stderr))
 	cmd.AddCommand(newProfileStatusCommand(stdout, stderr))
 	cmd.AddCommand(newProfileTemplatesCommand(stdout, stderr))
+	cmd.AddCommand(newProfileShowTemplateCommand(stdout, stderr))
 	return cmd
 }
 
@@ -260,6 +262,88 @@ func newProfileTemplatesCommand(stdout, _ io.Writer) *cobra.Command {
 		RunE: func(_ *cobra.Command, _ []string) error {
 			for _, n := range profile.TemplateNames() {
 				fmt.Fprintln(stdout, n)
+			}
+			return nil
+		},
+	}
+}
+
+// --- profile show-template ---
+
+func newProfileShowTemplateCommand(stdout, _ io.Writer) *cobra.Command {
+	var outFile string
+	c := &cobra.Command{
+		Use:   "show-template NAME",
+		Short: "Dump the YAML source of a built-in template",
+		Long: `Dump the raw YAML source of a built-in profile template to stdout
+(or to a file via --out). Useful as a starting point for an enterprise
+overrides YAML, avoiding the need to curl from GitHub:
+
+  cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
+
+List available templates with: cowork-mdm profile templates`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			data, err := profile.ReadTemplateSource(args[0])
+			if err != nil {
+				return err
+			}
+			if outFile != "" {
+				if err := os.WriteFile(outFile, data, 0o644); err != nil {
+					return fmt.Errorf("write %s: %w", outFile, err)
+				}
+				return nil
+			}
+			_, err = stdout.Write(data)
+			return err
+		},
+	}
+	c.Flags().StringVar(&outFile, "out", "", "write to this path instead of stdout")
+	return c
+}
+
+// --- profile lint ---
+
+func newProfileLintCommand(stdout, stderr io.Writer) *cobra.Command {
+	return &cobra.Command{
+		Use:   "lint FILE",
+		Short: "Flag REPLACE_* placeholder residuals in a generated profile",
+		Long: `Pre-distribution gate that scans every value in a generated
+mobileconfig / plist for leftover REPLACE_* placeholder tokens (e.g.
+REPLACE_WITH_YOUR_API_KEY, REPLACE_ME). Exits non-zero on any finding.
+
+Complements profile validate, which is schema-only and does NOT catch
+placeholders. Scope is narrow by design: only the REPLACE_<CAPS>
+convention is flagged; older template variable slots like ACCOUNT /
+PROFILE_ID in bedrock-basic are intentional and NOT flagged.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			data, err := os.ReadFile(args[0])
+			if err != nil {
+				return err
+			}
+			p, _, err := decodeByDetection(data)
+			if err != nil {
+				return err
+			}
+			findings := profile.LintPlaceholders(p)
+			asJSON, _ := cmd.Flags().GetBool("json")
+			if asJSON {
+				payload := map[string]any{
+					"file":     args[0],
+					"findings": findings,
+				}
+				enc := json.NewEncoder(stdout)
+				enc.SetIndent("", "  ")
+				if err := enc.Encode(payload); err != nil {
+					return err
+				}
+			} else {
+				fmt.Fprintf(stdout, "%s: %s", args[0], profile.FormatFindings(findings))
+			}
+			if len(findings) > 0 {
+				fmt.Fprintf(stderr, "%s: %d placeholder residual(s) present — do not distribute\n", args[0], len(findings))
+				return fmt.Errorf("placeholder residuals")
 			}
 			return nil
 		},

@@ -136,6 +136,99 @@ func TestProfileValidate_FlagsGarbage(t *testing.T) {
 	}
 }
 
+func TestProfileShowTemplate_Stdout(t *testing.T) {
+	out, _, err := runCmd(t, "profile", "show-template", "enterprise-cn-full")
+	if err != nil {
+		t.Fatalf("show-template: %v", err)
+	}
+	if !strings.HasPrefix(out, "name: enterprise-cn-full") {
+		t.Errorf("expected YAML to start with 'name: enterprise-cn-full', got %q", firstN(out, 60))
+	}
+	if !strings.Contains(out, "REPLACE_WITH_YOUR_API_KEY") {
+		t.Errorf("dumped YAML missing placeholder")
+	}
+}
+
+func TestProfileShowTemplate_OutFile(t *testing.T) {
+	dir := t.TempDir()
+	outPath := filepath.Join(dir, "overrides.yaml")
+	_, _, err := runCmd(t, "profile", "show-template", "enterprise-cn-full", "--out", outPath)
+	if err != nil {
+		t.Fatalf("show-template --out: %v", err)
+	}
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(data), "name: enterprise-cn-full") {
+		t.Errorf("file content wrong prefix: %q", firstN(string(data), 60))
+	}
+}
+
+func TestProfileShowTemplate_UnknownName(t *testing.T) {
+	_, _, err := runCmd(t, "profile", "show-template", "does-not-exist")
+	if err == nil {
+		t.Error("unknown template name should fail")
+	}
+	// Error should list available templates.
+	if !strings.Contains(err.Error(), "bedrock-basic") {
+		t.Errorf("error should list available templates, got: %v", err)
+	}
+}
+
+func TestProfileLint_DirtyProfileFails(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "dirty.mobileconfig")
+	if _, _, err := runCmd(t, "profile", "new", "--template", "enterprise-cn-full", "--out", p); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := runCmd(t, "profile", "lint", p)
+	if err == nil {
+		t.Error("lint on dirty profile should fail")
+	}
+	if !strings.Contains(out, "REPLACE_WITH_YOUR_API_KEY") {
+		t.Errorf("lint output should name the placeholder, got: %q", firstN(out, 200))
+	}
+	if !strings.Contains(out, "placeholder") {
+		t.Errorf("lint output should mention placeholder, got: %q", firstN(out, 200))
+	}
+}
+
+func TestProfileLint_CleanProfilePasses(t *testing.T) {
+	// Build a profile from bedrock-basic which uses ACCOUNT / PROFILE_ID
+	// variable names (not the REPLACE_* convention) — lint must not flag.
+	dir := t.TempDir()
+	p := filepath.Join(dir, "clean.mobileconfig")
+	if _, _, err := runCmd(t, "profile", "new", "--template", "bedrock-basic", "--out", p); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := runCmd(t, "profile", "lint", p)
+	if err != nil {
+		t.Errorf("lint on bedrock-basic should pass, got err=%v out=%s", err, out)
+	}
+	if !strings.Contains(out, "no placeholder") {
+		t.Errorf("lint output should confirm clean, got: %q", out)
+	}
+}
+
+func TestProfileLint_JSON(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "dirty.mobileconfig")
+	if _, _, err := runCmd(t, "profile", "new", "--template", "enterprise-cn-full", "--out", p); err != nil {
+		t.Fatal(err)
+	}
+	out, _, err := runCmd(t, "profile", "lint", "--json", p)
+	if err == nil {
+		t.Error("lint on dirty profile should fail even with --json")
+	}
+	if !strings.HasPrefix(strings.TrimSpace(out), "{") {
+		t.Errorf("--json output should start with {, got: %q", firstN(out, 80))
+	}
+	if !strings.Contains(out, `"findings"`) || !strings.Contains(out, `"match"`) {
+		t.Errorf("--json output missing findings structure: %q", firstN(out, 200))
+	}
+}
+
 func TestProfileApply_DryRun_NoSideEffects(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skipf("apply tests run only on darwin, got %s", runtime.GOOS)

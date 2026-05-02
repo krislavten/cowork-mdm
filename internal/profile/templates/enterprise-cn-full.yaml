@@ -7,12 +7,13 @@ description: |
   # THIS IS A SCAFFOLD, NOT A PRODUCTION PROFILE.
   # Every REPLACE_* placeholder below MUST be filled in before deploying.
   # `cowork-mdm profile validate` only checks schema correctness — it does
-  # NOT catch leftover placeholders. The intended usage is:
+  # NOT catch leftover placeholders. Use `profile lint` for that. Intended
+  # usage:
   #
-  #   1. Copy this file to <your-org>/overrides.yaml
+  #   1. cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
   #   2. Fill every REPLACE_* placeholder with real values
   #   3. cowork-mdm profile new --from overrides.yaml --out company.mobileconfig
-  #   4. grep -q "REPLACE_" company.mobileconfig && echo "STOP: placeholders present"
+  #   4. cowork-mdm profile lint company.mobileconfig   (must exit 0)
   #   5. cowork-mdm profile validate company.mobileconfig
   #
   # See docs/deployment-cn.md for the full deployment cookbook.
