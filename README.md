@@ -47,10 +47,16 @@ IT teams hit this wall every time they try to:
 
 ## Quickstart
 
-```bash
-brew install krislavten/tap/cowork-mdm
+Pick the install channel that matches where `cowork-mdm` will run.
 
-# 6-command happy path for an enterprise gateway deployment:
+| Runs on | Install via |
+|---|---|
+| Admin workstation (authoring profiles) | `brew install krislavten/tap/cowork-mdm` |
+| Employee Macs (Wave 2 Script payload) | Signed + notarized `.pkg` installer from [Releases](https://github.com/krislavten/cowork-mdm/releases), pushed via your MDM's package-deployment mechanism. Lands at `/opt/cowork-mdm/bin/` and symlinks to `/usr/local/bin/cowork-mdm`. Release pkgs are unsigned until Developer ID secrets are added (see [Maintainer notes](#enabling-signed--notarized-pkg-installers)) — unsigned pkgs are fine for dev/CI but most MDM stacks will reject them for fleet delivery. |
+| CI / throwaway machines | `tar.gz` from the Release page — unpack and run. |
+
+```bash
+# On the admin workstation — 6-command happy path for a gateway deployment:
 cowork-mdm profile show-template enterprise-cn-full --out overrides.yaml
 $EDITOR overrides.yaml                           # fill every REPLACE_* slot
 cowork-mdm profile new --from overrides.yaml \
@@ -185,19 +191,40 @@ Development conventions in [AGENTS.md](AGENTS.md). Specs in [`specs/`](specs/). 
 
 ### Releasing
 
-Releases are tag-triggered. Push a `v*` tag and `.github/workflows/release.yml` runs GoReleaser.
+Releases are tag-triggered. Push a `v*` tag and `.github/workflows/release.yml` runs GoReleaser, then a follow-on macOS job builds the `.pkg` installers.
 
-The release job publishes to two places:
+The release job publishes to three places:
 
-1. **GitHub Releases** on this repo — uses the default `GITHUB_TOKEN`.
-2. **Homebrew tap** at `krislavten/homebrew-tap` — requires secret `HOMEBREW_TAP_GITHUB_TOKEN` with **contents:write** on that repo. Without it, the brew formula push step fails; everything else (GitHub Release + binaries + checksums) still succeeds.
+1. **GitHub Releases** on this repo — tar.gz + zip archives + `.pkg` installers (arm64 + x86_64) + `checksums.txt`. Uses the default `GITHUB_TOKEN`.
+2. **Homebrew tap** at `krislavten/homebrew-tap` — requires secret `HOMEBREW_TAP_GITHUB_TOKEN` with **contents:write** on that repo. Without it, the brew formula push step fails; everything else still succeeds.
+3. **macOS `.pkg` installers** — built unsigned by default. If Apple Developer ID secrets are present (see below), they're signed + notarized automatically. Unsigned pkgs are useful for dev/CI testing and for orgs that re-sign with their own internal cert, but most MDM stacks (Jamf Pro, Kandji, Intune) require a Developer ID Installer signature — or an in-house cert trusted by the enrolled Macs — before they will deploy a `.pkg`.
 
-Set the secret once:
+Set the Homebrew secret once:
 
 ```bash
 gh secret set HOMEBREW_TAP_GITHUB_TOKEN --repo krislavten/cowork-mdm
 # paste the PAT when prompted
 ```
+
+### Enabling signed + notarized `.pkg` installers
+
+Apple signing is optional for the release pipeline itself — without secrets the job still emits unsigned pkgs — but it's a hard requirement for MDM delivery. When all seven secrets are set, every subsequent `v*` tag produces a Developer-ID-signed, Apple-notarized `.pkg` that passes Gatekeeper on user double-click and is accepted by Jamf Pro / Kandji / Intune.
+
+Required secrets (all set via `gh secret set NAME --repo krislavten/cowork-mdm`):
+
+| Secret | What it is | Where to get it |
+|---|---|---|
+| `MACOS_APP_CERT_P12` | Developer ID **Application** cert, base64-encoded `.p12` export | Keychain Access → right-click cert → Export → set a password. Then `base64 -i cert.p12 \| pbcopy`. |
+| `MACOS_APP_CERT_PASSWORD` | The password you set when exporting the above | — |
+| `MACOS_INSTALLER_CERT_P12` | Developer ID **Installer** cert, base64-encoded `.p12` export (separate cert from the Application one; signs the `.pkg` envelope) | Same procedure. |
+| `MACOS_INSTALLER_CERT_PASSWORD` | Password for the installer `.p12` | — |
+| `APPLE_API_KEY_P8` | App Store Connect API key contents (raw `.p8` file text) | [App Store Connect → Users and Access → Integrations → App Store Connect API](https://appstoreconnect.apple.com/access/api). Create a key with **Developer** role. Downloadable exactly once. |
+| `APPLE_API_KEY_ID` | The 10-char Key ID shown next to the key name | Same page. |
+| `APPLE_API_ISSUER_ID` | The Issuer UUID shown at the top of the same page | Same page (one per team). |
+
+Verify activation by pushing a patch tag and watching the `macos-pkg` job in Actions — it should log `build-pkg: signing binary with Developer ID Application (...)` and `build-pkg: notarized + stapled` instead of the `skipping` messages.
+
+If all certificate P12 secrets are absent, the signing path is skipped and the job emits unsigned pkgs. If the P12s are set but the matching passwords are missing or wrong, the keychain-import step fails *before* any pkg is built — the Release will show tar.gz + brew assets only, no pkg. `continue-on-error: true` keeps the workflow green in that case, but the fix is to set the passwords correctly and re-push the tag.
 
 ## License
 

@@ -46,9 +46,24 @@ Before starting, gather:
   config only.
 - **A macOS 13+ test machine** you can enroll in your MDM's staging group
   to verify the deployment end-to-end before rolling to the fleet.
-- **`cowork-mdm` CLI installed locally** (`brew install
-  krislavten/tap/cowork-mdm`). You need it to generate, validate, and
-  preview the profile on the admin workstation before pushing.
+- **`cowork-mdm` CLI on the admin workstation** — install via
+  `brew install krislavten/tap/cowork-mdm`. You need it to generate,
+  validate, and preview the profile before pushing.
+- **`cowork-mdm` CLI on employee Macs** — every target Mac needs the
+  binary present so the Wave 2 Script payload (Section 5) can run
+  `marketplace add`. The recommended enterprise path is the `.pkg`
+  installer from each GitHub Release
+  (`cowork-mdm_<version>_darwin_<arch>.pkg`), pushed via your MDM's
+  package-deployment mechanism *before* Wave 2 runs. The pkg lands
+  the binary at `/opt/cowork-mdm/bin/cowork-mdm` and symlinks it at
+  `/usr/local/bin/cowork-mdm`. **Before pushing, confirm the pkg is
+  signed** — Jamf Pro / Kandji / Intune all require a Developer ID
+  Installer signature (or an internally trusted cert) on any `.pkg`
+  they deploy. Release-page pkgs are unsigned until the repo's Apple
+  signing secrets are configured; if your copy is unsigned, either
+  re-sign with your org's internal Developer ID / MDM cert before
+  pushing, or fall back to brew on a test machine. The Wave-2
+  resolver below finds both pkg and brew layouts.
 
 ## 2. Pick your LLM provider
 
@@ -198,19 +213,27 @@ cadence. Wave 2 can also run later as an update path (see Section 8).
 
 **Wave 2 (Script payload for plugin delivery)**
 1. **Settings → Computer Management → Scripts → + New**
-2. Body (assumes cowork-mdm is installed via brew or deployed via your
-   own package). The script resolves the CLI path across Intel +
-   Apple Silicon brew layouts and idempotently adds + updates the
-   marketplace:
+2. Body (assumes cowork-mdm is already present on the target Mac —
+   via the `.pkg` from this repo's Releases, via brew, or via your
+   own internally-signed package; see Section 1 for the install
+   pre-req). The resolver checks the pkg install location first
+   (`/opt/cowork-mdm/bin`), then the two brew layouts, then PATH.
+   `COWORK_MDM_BIN` overrides everything for orgs with non-standard
+   install paths. The script is idempotent — safe to run on the
+   MDM's recurring check-in cadence:
    ```bash
    #!/bin/bash
    set -euo pipefail
 
    # Resolve the cowork-mdm binary across common install locations.
-   # Override via COWORK_MDM_BIN if your org installs somewhere else.
+   # Order matches expected enterprise priority: pkg > brew (Apple
+   # Silicon) > brew (Intel) > PATH. Override via COWORK_MDM_BIN.
    CLI="${COWORK_MDM_BIN:-}"
    if [ -z "$CLI" ]; then
-     for candidate in /opt/homebrew/bin/cowork-mdm /usr/local/bin/cowork-mdm; do
+     for candidate in \
+       /opt/cowork-mdm/bin/cowork-mdm \
+       /opt/homebrew/bin/cowork-mdm \
+       /usr/local/bin/cowork-mdm; do
        [ -x "$candidate" ] && CLI="$candidate" && break
      done
    fi
