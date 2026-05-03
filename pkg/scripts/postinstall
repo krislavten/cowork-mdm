@@ -1,0 +1,59 @@
+#!/bin/bash
+# postinstall for cowork-mdm .pkg
+#
+# Runs as root after files under /opt/cowork-mdm/ are dropped into place.
+# Responsibilities:
+#   1. Ensure the binary is executable (pkgbuild preserves mode but this is
+#      belt-and-braces against a bad staging).
+#   2. Put /opt/cowork-mdm/bin/cowork-mdm onto the default PATH by
+#      symlinking it at /usr/local/bin/cowork-mdm.
+#
+# Collision handling at /usr/local/bin/cowork-mdm:
+#   - Nothing there              → create the symlink.
+#   - Symlink already pointing at our payload → idempotent no-op.
+#   - Symlink pointing elsewhere (e.g. Homebrew's Cellar) → back it up;
+#     the admin can roll back by deleting /opt/cowork-mdm and restoring
+#     the backup. We do NOT silently clobber — Homebrew installs are the
+#     most likely incumbent and the user may want them.
+#   - Regular file (hand-compiled copy)       → back it up too.
+
+set -eu
+
+BIN_SRC="/opt/cowork-mdm/bin/cowork-mdm"
+BIN_LINK="/usr/local/bin/cowork-mdm"
+
+if [ ! -x "$BIN_SRC" ]; then
+  echo "postinstall: missing binary at $BIN_SRC" >&2
+  exit 1
+fi
+
+mkdir -p /usr/local/bin
+chmod 0755 "$BIN_SRC"
+
+backup_existing() {
+  local reason="$1"
+  local backup="${BIN_LINK}.prev.$(date +%Y%m%d%H%M%S)"
+  mv "$BIN_LINK" "$backup"
+  echo "postinstall: $reason — moved aside to $backup"
+}
+
+if [ -L "$BIN_LINK" ]; then
+  target="$(readlink "$BIN_LINK")"
+  case "$target" in
+    "$BIN_SRC")
+      echo "postinstall: symlink already points at $BIN_SRC — no change"
+      ;;
+    *)
+      backup_existing "pre-existing symlink → $target"
+      ln -s "$BIN_SRC" "$BIN_LINK"
+      ;;
+  esac
+elif [ -e "$BIN_LINK" ]; then
+  backup_existing "pre-existing non-symlink file"
+  ln -s "$BIN_SRC" "$BIN_LINK"
+else
+  ln -s "$BIN_SRC" "$BIN_LINK"
+fi
+
+echo "postinstall: cowork-mdm installed at $BIN_SRC, available as $BIN_LINK"
+exit 0
